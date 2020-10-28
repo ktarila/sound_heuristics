@@ -6,7 +6,9 @@ from sound_heuristic import config as cfg
 def main():
     """Main entry for solution"""
     print(cfg.NAME)
-    print(solution.evaluation())
+    population = solution.init_population()
+    intensity = solution.compute_intensity(population)
+    print(intensity)
 
 
 if __name__ == '__main__':
