@@ -1,4 +1,8 @@
 """Hold global variables"""
 
 
-NAME = "Sound Heuristic Search Algorithm"
+NAME = """
+******************************************
+Sound Intensity Heuristic Search Algorithm
+******************************************
+"""
