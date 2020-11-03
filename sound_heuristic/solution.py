@@ -1,6 +1,7 @@
 """Evaluation function for minimisation function"""
 
 import numpy as np
+from sklearn.metrics.pairwise import euclidean_distances
 
 from sound_heuristic import config as cfg
 
@@ -18,8 +19,8 @@ def function_one(value):
        Input: [value1, value2, ..., valuen]
        Output: value1^2 + value2^2 + ... + valuen^2
     """
-    value_array = np.array(value)
-    return sum(np.square(value_array))
+    # value_array = np.array(value)
+    return sum(np.square(value))
 
 
 def init_population(dim=2, size=50, search_space=None, use_dim=True):
@@ -43,10 +44,23 @@ def init_population(dim=2, size=50, search_space=None, use_dim=True):
     return pop
 
 
-def compute_intensity(population):
-    """Compute the intensity of a population"""
-    power = np.zeros((population.shape[0], population.shape[0]))
-    return power
+def compute_intensity(population, fitness_function, minimisation=True):
+    """Compute the intensity of a population
+       Given the power (determined from the fitness)
+       of an agent
+    """
+    # Distance between pair of agents
+    distance = euclidean_distances(population, population)
+    area = 4 * np.pi * np.power(distance, 2)
+    # compute 1/area^2
+    area_reciprocal = np.power(np.reciprocal(
+        area, out=np.zeros_like(area), where=area != 0), 2)
+    # Transform big_power to column vector for multiplication
+    power_big = big_power(fitness_function, population, minimisation)
+    # print(power_big.shape)
+    big_pow_col = np.atleast_2d(power_big).transpose()
+    # print(big_pow_col.shape)
+    return area_reciprocal * big_pow_col
 
 
 def compute_fitness(fitness_function, population):
