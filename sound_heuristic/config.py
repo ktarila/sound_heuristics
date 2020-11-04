@@ -6,3 +6,5 @@ NAME = """
 Sound Intensity Heuristic Search Algorithm
 ******************************************
 """
+
+MINIMISATION = True

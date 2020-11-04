@@ -58,6 +58,7 @@ def compute_intensity(population, fitness_function, minimisation=True):
     # Transform big_power to column vector for multiplication
     power_big = big_power(fitness_function, population, minimisation)
     # print(power_big.shape)
+    # for row multiplication
     big_pow_col = np.atleast_2d(power_big).transpose()
     # print(big_pow_col.shape)
     return area_reciprocal * big_pow_col
@@ -100,3 +101,18 @@ def big_power(fitness_function, population, minimisation=True):
     small_p = small_power(fitness_function, population, minimisation)
     total = np.sum(small_p)
     return small_p / total
+
+
+def movement(population, intensity, power):
+    """Calculate movement of agents in population
+       Which is a fraction of calling agent (based on the intensity)
+       divided by the power of agent
+    """
+    total_intensity = np.atleast_2d(np.sum(intensity, axis=1)).transpose()
+    fraction = population * total_intensity
+    total = np.sum(fraction, axis=0)
+    # reshape to add repeat total
+    total = np.reshape(total, (1, total.size))
+    # repeat rows x times
+    displacement = np.repeat(total, population.shape[0], axis=0)
+    return displacement * np.atleast_2d(power).transpose()
