@@ -79,12 +79,36 @@ def get_best(fitness_array, minimisation=True):
     return np.amin(fitness_array) if minimisation else np.amax(fitness_array)
 
 
+def get_best_index(fitness_array, minimisation=True):
+    """Get the best result,
+       if minimisation best is smallest value
+       if not minimisation best is largest value
+    """
+    if minimisation:
+        return np.unravel_index(
+            np.argmin(fitness_array, axis=None), fitness_array.shape)
+    return np.unravel_index(
+        np.argmax(fitness_array, axis=None), fitness_array.shape)
+
+
 def get_worst(fitness_array, minimisation=True):
     """Get the best result,
        if minimisation best is smallest value
        if not minimisation best is largest value
     """
     return np.amax(fitness_array) if minimisation else np.amin(fitness_array)
+
+
+def get_worst_index(fitness_array, minimisation=True):
+    """Get the best result,
+       if minimisation best is smallest value
+       if not minimisation best is largest value
+    """
+    if minimisation:
+        return np.unravel_index(
+            np.argmax(fitness_array, axis=None), fitness_array.shape)
+    return np.unravel_index(
+        np.argmin(fitness_array, axis=None), fitness_array.shape)
 
 
 def small_power(fitness_function, population, minimisation=True):
@@ -116,3 +140,12 @@ def movement(population, intensity, power):
     # repeat rows x times
     displacement = np.repeat(total, population.shape[0], axis=0)
     return displacement * np.atleast_2d(power).transpose()
+
+
+def compare_fitness(first, second, fitness_function, minimisation=True):
+    """Compare the fitness values of two agents"""
+    first_fitness = fitness_function(first)
+    second_fitness = fitness_function(second)
+    if minimisation:
+        return first if first_fitness < second_fitness else second
+    return first if first_fitness > second_fitness else second
