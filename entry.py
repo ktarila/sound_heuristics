@@ -12,7 +12,7 @@ def main():
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
     initial_vector = population[initial_best[0]]
     global_best = population[initial_best[0]]
-    for iteration in range(1, 100):
+    for iteration in range(1, 1000):
         print("Iteration:", iteration)
         population = next_population(population, fitness_func)
         fitnesses = solution.compute_fitness(fitness_func, population)
@@ -23,6 +23,8 @@ def main():
         global_best = solution.compare_fitness(
             population[best[0]],
             global_best, fitness_func, cfg.MINIMISATION)
+        if fitness_func(global_best) != fitnesses[best]:
+            population[worst[0]] = global_best
         print("  Global Best", global_best, fitness_func(global_best))
     print("Intial Best:", initial_vector, fitness_func(initial_vector))
     # print("Zero: [0, 0]", fitness_func([0, 0]))
@@ -32,14 +34,9 @@ def next_population(pop, fitness_function):
     """Compute the agents for the next iteration"""
     intensity = solution.compute_intensity(
         pop, fitness_function, cfg.MINIMISATION)
-    # print(intensity.shape)
-    # print(intensity)
-    power = solution.small_power(fitness_function, pop, cfg.MINIMISATION)
-    movement = solution.movement(pop, intensity, power)
-    # print(movement)
-    # print(movement.shape)
+    movement = solution.compute_change(
+        intensity, pop, fitness_function, cfg.MINIMISATION)
     next_pop = movement + pop
-
     return next_pop
 
 

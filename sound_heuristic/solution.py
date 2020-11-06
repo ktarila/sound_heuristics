@@ -64,6 +64,32 @@ def compute_intensity(population, fitness_function, minimisation=True):
     return area_reciprocal * big_pow_col
 
 
+def compute_change(intensity,
+                   population, fitness_function, minimisation=True):
+    """Convert intensity to range 0,1 probabilites"""
+    row_total = np.sum(intensity, axis=1)
+    row_total = np.atleast_2d(row_total).transpose()
+    # Hold cumulative sums
+    cum_total = np.cumsum((intensity / row_total), axis=1)
+    # Generate a set of uniformly distributed samples...
+    uniform_rand = np.random.rand(len(cum_total), 1)
+    # Get index
+    neighbours = population[(uniform_rand < cum_total).argmax(axis=1)]
+    # Get population array
+    pop_fit = compute_fitness(fitness_function, population)
+    neighbour_fitness = compute_fitness(fitness_function, neighbours)
+    percentage = np.zeros(pop_fit.shape)
+    if minimisation:
+        percentage = (neighbour_fitness / np.maximum(
+            pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
+    else:
+        percentage = (pop_fit / np.maximum(
+            pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
+    percentage = np.atleast_2d(percentage).transpose() * cfg.RHO
+    diff = (population - neighbours) * percentage / 100
+    return diff
+
+
 def compute_fitness(fitness_function, population):
     """Compute the fitness of a population
        Input is the fintess function and population
