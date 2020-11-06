@@ -7,7 +7,7 @@ def main():
     """Main entry for solution"""
     print(cfg.NAME)
     fitness_func = solution.function_one
-    population = solution.init_population(2, 50, [-10, 10], cfg.MINIMISATION)
+    population = solution.init_population(2, 30, [-100, 100], cfg.MINIMISATION)
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
     initial_vector = population[initial_best[0]]
