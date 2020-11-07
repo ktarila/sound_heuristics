@@ -8,4 +8,4 @@ Sound Intensity Heuristic Search Algorithm
 """
 
 MINIMISATION = True
-RHO = 20
+RHO = 90

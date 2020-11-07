@@ -23,24 +23,18 @@ def function_one(value):
     return sum(np.square(value))
 
 
-def init_population(dim=2, size=50, search_space=None, use_dim=True):
+def init_population(dim=2, size=50, search_space=None):
     """Create an initial population for a function"""
     pop = None
     if search_space is None:
         search_space = np.array([-100, 100])
     else:
         search_space = np.array(search_space)
-    if use_dim:
-        if search_space[0] < 0:
-            search_space = search_space ** dim
-            search_space[0] *= -1
-        else:
-            search_space = search_space ** dim
-        pop = np.random.default_rng().uniform(
-            search_space[0], search_space[1], [size, dim])
-        # pop = np.stack(
-        #     [np.random.uniform(search_space[0],
-        #                        search_space[1], dim) for _ in range(size)])
+    pop = np.random.default_rng().uniform(
+        search_space[0], search_space[1], [size, dim])
+    # pop = np.stack(
+    #     [np.random.uniform(search_space[0],
+    #                        search_space[1], dim) for _ in range(size)])
     return pop
 
 
@@ -87,6 +81,8 @@ def compute_change(intensity,
             pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
     percentage = np.atleast_2d(percentage).transpose() * cfg.RHO
     diff = (population - neighbours) * percentage / 100
+    # rand_num = np.random.default_rng().uniform(0, 1, [population.shape[0], 1])
+    # diff = (population - neighbours) * rand_num
     return diff
 
 
