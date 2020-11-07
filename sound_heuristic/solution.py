@@ -1,26 +1,10 @@
 """Evaluation function for minimisation function"""
 
+from math import exp
 import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 
 from sound_heuristic import config as cfg
-
-
-def evaluation():
-    """Compute Evaluation Function"""
-    print(cfg.NAME)
-    return 0
-
-
-def function_one(value):
-    """Unimodal test function for optimisation algo
-       Sphere function domain range [-100, 100]^n
-       #list of real values in domain range
-       Input: [value1, value2, ..., valuen]
-       Output: value1^2 + value2^2 + ... + valuen^2
-    """
-    # value_array = np.array(value)
-    return sum(np.square(value))
 
 
 def init_population(dim=2, size=50, search_space=None):
@@ -59,7 +43,7 @@ def compute_intensity(population, fitness_function, minimisation=True):
 
 
 def compute_change(intensity,
-                   population, fitness_function, minimisation=True):
+                   population, fitness_function, minimisation, iteration):
     """Convert intensity to range 0,1 probabilites"""
     row_total = np.sum(intensity, axis=1)
     row_total = np.atleast_2d(row_total).transpose()
@@ -79,9 +63,11 @@ def compute_change(intensity,
     else:
         percentage = (pop_fit / np.maximum(
             pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
+    # percentage = np.atleast_2d(percentage).transpose() * decay(iteration)
     percentage = np.atleast_2d(percentage).transpose() * cfg.RHO
     diff = (population - neighbours) * percentage / 100
-    # rand_num = np.random.default_rng().uniform(0, 1, [population.shape[0], 1])
+    # rand_num = np.random.default_rng().uniform(
+    #     0, 1, [population.shape[0], 1])
     # diff = (population - neighbours) * rand_num
     return diff
 
@@ -171,3 +157,10 @@ def compare_fitness(first, second, fitness_function, minimisation=True):
     if minimisation:
         return first if first_fitness < second_fitness else second
     return first if first_fitness > second_fitness else second
+
+
+def decay(iteration):
+    """ decay to 37% of previous value at
+        every 100 intervals. Initial value at iteration = 0 is rho
+    """
+    return cfg.RHO * exp(-1 * iteration / 600)
