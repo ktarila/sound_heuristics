@@ -9,8 +9,9 @@ from sound_heuristic import fitness
 def main():
     """Main entry for solution"""
     print(cfg.NAME)
-    fitness_func = fitness.f1
-    population = solution.init_population(30, 50, [-100, 100])
+    fitness_func = fitness.f2
+    domain = [-10, 10]
+    population = solution.init_population(30, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
     initial_vector = population[initial_best[0]]
@@ -19,6 +20,8 @@ def main():
         print("Iteration:", iteration)
         population = next_population(population, fitness_func, iteration)
         fitnesses = solution.compute_fitness(fitness_func, population)
+        # print("******fitnesses*****")
+        # print(fitnesses)
         best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
         worst = solution.get_worst_index(fitnesses, cfg.MINIMISATION)
         print("  Best:", fitnesses[best])

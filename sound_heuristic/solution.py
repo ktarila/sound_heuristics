@@ -125,6 +125,7 @@ def small_power(fitness_function, population, minimisation=True):
     best = get_best(fitness_array, minimisation)
     worst = get_worst(fitness_array, minimisation)
     small_p = (fitness_array - worst) / best - worst
+
     return small_p
 
 
@@ -132,6 +133,10 @@ def big_power(fitness_function, population, minimisation=True):
     """Calculate the nomalized Power (fitness of agents in population)"""
     small_p = small_power(fitness_function, population, minimisation)
     total = np.sum(small_p)
+    # print("********small_p**********")
+    # print(small_p)
+    # print("******big_p**********")
+    # print(small_p / total)
     return small_p / total
 
 

@@ -15,4 +15,7 @@ def f1(value):
 
 def f2(value):
     """Unimodal Test Function"""
-    return value
+    prod = np.product(np.abs(value))
+    add = np.sum(np.abs(value))
+    # print(prod, "+", add, " = ", prod + add)
+    return prod + add
