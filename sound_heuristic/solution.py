@@ -45,7 +45,11 @@ def compute_intensity(population, fitness_function, minimisation=True):
 def compute_change(intensity,
                    population, fitness_function, minimisation, iteration):
     """Convert intensity to range 0,1 probabilites"""
+    # print("***intensity**")
+    # print(intensity)
+    # print("***Cumsum***")
     row_total = np.sum(intensity, axis=1)
+    # print(row_total)
     row_total = np.atleast_2d(row_total).transpose()
     # Hold cumulative sums
     cum_total = np.cumsum((intensity / row_total), axis=1)

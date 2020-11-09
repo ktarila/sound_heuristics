@@ -1,5 +1,5 @@
 """Heuristic search alorithms based on sound/light"""
-# import numpy as np
+import numpy as np
 
 from sound_heuristic import solution
 from sound_heuristic import config as cfg
@@ -9,8 +9,9 @@ from sound_heuristic import fitness
 def main():
     """Main entry for solution"""
     print(cfg.NAME)
-    fitness_func = fitness.f2
-    domain = [-10, 10]
+    cfg.RAND_VALUE = np.random.uniform(0, 1)
+    fitness_func = fitness.f3
+    domain = cfg.DOMAIN
     population = solution.init_population(30, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
@@ -33,10 +34,11 @@ def main():
             global_best, fitness_func, cfg.MINIMISATION)
         if fitness_func(global_best) != fitnesses[best]:
             population[worst[0]] = global_best
-        # print("  Global Best", global_best, fitness_func(global_best))
         print("  Global Best", fitness_func(global_best))
+        print("--------------------------------------------")
     # print("Intial Best:", initial_vector, fitness_func(initial_vector))
     print("Intial Best:", fitness_func(initial_vector))
+    print("  Global Best", global_best, fitness_func(global_best))
     # zeros = np.zeros(30)
     # print(zeros)
     # print(fitness_func(zeros))
@@ -49,6 +51,18 @@ def next_population(pop, fitness_function, iteration):
     movement = solution.compute_change(
         intensity, pop, fitness_function, cfg.MINIMISATION, iteration)
     next_pop = movement + pop
+    # keep next pop in range
+    # all greater than is upper limit minus random value
+    next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[1] - np.random.uniform(
+        0, cfg.DOMAIN[1])
+    # next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[
+    #     1] - np.random.uniform(0, 1)
+    # all less is lowwer limit plus random value
+    next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[0] + np.random.uniform(
+        0, cfg.DOMAIN[1])
+    # next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[
+    #     0] + np.random.uniform(0, 1)
+    # print(next_pop)
     return next_pop
 
 
