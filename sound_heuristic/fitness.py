@@ -66,3 +66,9 @@ def f7(value):
 def f8(value):
     """multimodal function"""
     return np.sum((-1 * value) * np.sin(np.sqrt(np.abs(value))))
+
+
+def f9(value):
+    """multimodal function"""
+    return np.sum(np.power(value, 2) - (10 * np.cos(
+        2 * np.pi * value)) + 10)

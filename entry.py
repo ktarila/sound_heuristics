@@ -17,7 +17,7 @@ def main():
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
     initial_vector = population[initial_best[0]]
     global_best = population[initial_best[0]]
-    for iteration in range(1, 3000):
+    for iteration in range(1, 1000):
         print("Iteration:", iteration)
         population = next_population(population, fitness_func, iteration)
         fitnesses = solution.compute_fitness(fitness_func, population)
