@@ -72,3 +72,21 @@ def f9(value):
     """multimodal function"""
     return np.sum(np.power(value, 2) - (10 * np.cos(
         2 * np.pi * value)) + 10)
+
+
+def f10(value):
+    """multimodal function"""
+    val_one = -20 * np.exp(-0.2 * np.sqrt(
+        (1 / len(value)) * np.sum(np.power(value, 2))))
+
+    val_two = np.exp(
+        (1 / len(value)) * np.sum(np.cos(2 * np.pi * value)))
+
+    return val_one - val_two + 20 + np.e
+
+
+def f11(value):
+    """multimodal function"""
+    val_one = (1 / 400) * np.sum(np.power(value, 2))
+    val_two = np.product(np.cos(value / np.sqrt(1)))
+    return val_one - val_two + 1
