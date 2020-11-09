@@ -12,4 +12,4 @@ MINIMISATION = True
 # Could greatly influence the final result
 RHO = 50
 RAND_VALUE = None
-DOMAIN = [-600, 600]
+DOMAIN = [-50, 50]
