@@ -123,3 +123,39 @@ def f12(value):
     third = np.power((val_y_last - 1), 2)
     return (np.pi / len(value)) * (
         first + second + third) + u_sum(value, 10, 100, 4)
+
+
+def f13(value):
+    """multi modal function"""
+    last = len(value) - 1
+    first = np.sin(3 * np.pi * value[0]) ** 2
+    second = np.sum(
+        np.power((value - 1), 2) * (
+            1 + np.sin((3 * np.pi * value) + 1) ** 2)
+    )
+    third = np.power((value[last] - 1), 2) * (
+        1 + np.sin(2 * np.pi * value[last]) ** 2)
+
+    return 0.1 * (first + second + third) + u_sum(value, 5, 100, 4)
+
+
+def f14(value):
+    """Unimodal function
+       dimension of value = 2
+    """
+    if len(value) != 2:
+        raise Exception("Dimension of f14 must be equal to 2")
+    array_a = np.array(
+        [[-32.0, -16, 0, 16, 32, -32, -16, 0, 16, 32, -32,
+          -16, 0, 16, 32, -32, -16, 0, 16, 32, -32, -16, 0, 16, 32], [
+              -32, -32, -32, -32, -32, -16, -16, -16, -16, -16, 0, 0, 0, 0, 0,
+              16, 16, 16, 16, 16, 32, 32, 32, 32, 32]])
+    # get number of columns --- should be equal 25
+    length = array_a[0, :].shape[0]
+
+    bottom = np.array([np.sum(np.power((value - array_a[:, j]), 6))
+                       for j in range(length)])
+
+    line = np.linspace(1, length, length)
+    fit = np.power((1 / 500 + np.sum(1 / (line + bottom))), -1)
+    return fit
