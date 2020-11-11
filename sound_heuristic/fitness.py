@@ -104,33 +104,36 @@ def u_sum(value, param_1, param_2, param_3):
         np.logical_and(new_u > minus_p1, new_u < param_1), 0, new_u)
     new_u = np.where(
         new_u < minus_p1, param_2 * (-1 * new_u - param_1) ** param_3, new_u)
+    # print(new_u)
     return np.sum(new_u)
 
 
 def f12(value):
     """multimodal function"""
-    print("-------------")
-    last = len(value) - 1
-    val_y = 1 + ((1 + value) / 4)
-    val_y_last = val_y[last]
-    y_plus_1 = np.copy(val_y)
-    # remove last because sum is to n - 1
-    val_y = np.delete(val_y, last)
-    # remove first because adding yi and yi+1
-    y_plus_1 = np.delete(y_plus_1, 0)
-    first = 10 * np.sin(np.pi * val_y[0])
-    print(first)
-    second = np.sum(
-        np.power((val_y - 1), 2) * (
-            1 + (10 * np.sin(np.pi * y_plus_1) ** 2))
+    length = len(value)
+    ff1 = 10 * np.power((np.sin(np.pi * (1 + (value[0] + 1) / 4))), 2)
+    # print(ff1)
+
+    ff2 = np.power(((value[0:length - 1] + 1) / 4), 2)
+    # print(ff2)
+
+    ff3 = (
+        1 + 10 * np.power((np.sin(
+            np.pi * (1 + (value[1:length] + 1) / 4))), 2)
     )
-    print(second)
-    third = np.power((val_y_last - 1), 2)
-    print(third)
+    # print(ff3)
+
+    ff4 = np.power(((value[length - 1] + 1) / 4), 2)
+    # print(ff4)
+
+    # print(np.sum(ff2 * ff3))
+
+    total = (np.pi / length) * (ff1 + np.sum(ff2 * ff3) + ff4)
+    # print(total)
     # uuu = u_sum(value, 10, 100, 4)
     # print(uuu)
-    return (np.pi / len(value)) * (
-        first + second + third)
+    # print(total + u_sum(value, 10, 100, 4))
+    return total + u_sum(value, 10, 100, 4)
 
 
 def f13(value):
