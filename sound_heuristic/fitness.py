@@ -25,10 +25,11 @@ def f2(value):
 
 def f3(value):
     """unimodal test function"""
-    total = 0
-    for index in range(1, len(value)):
-        total += np.power(np.sum(value[:index]), 2)
-    return total
+    fit = 0
+    length = len(value) + 1
+    for i in range(1, length):
+        fit = fit + np.power(np.sum(value[0:i]), 2)
+    return fit
 
 
 def f4(value):
@@ -59,8 +60,8 @@ def f6(value):
 def f7(value):
     """unimodal function"""
     ind = np.linspace(1, len(value), len(value))
-    content = (ind * np.power(value, 4)) + cfg.RAND_VALUE
-    return np.sum(content)
+    content = (ind * np.power(value, 4))
+    return np.sum(content) + cfg.RAND_VALUE
 
 
 def f8(value):
@@ -87,8 +88,9 @@ def f10(value):
 
 def f11(value):
     """multimodal function"""
-    val_one = (1 / 400) * np.sum(np.power(value, 2))
-    val_two = np.product(np.cos(value / np.sqrt(1)))
+    ind = np.linspace(1, len(value), len(value))
+    val_one = np.sum(np.power(value, 2)) / 400
+    val_two = np.product(np.cos(value / np.sqrt(ind)))
     return val_one - val_two + 1
 
 
@@ -107,6 +109,7 @@ def u_sum(value, param_1, param_2, param_3):
 
 def f12(value):
     """multimodal function"""
+    print("-------------")
     last = len(value) - 1
     val_y = 1 + ((1 + value) / 4)
     val_y_last = val_y[last]
@@ -116,13 +119,18 @@ def f12(value):
     # remove first because adding yi and yi+1
     y_plus_1 = np.delete(y_plus_1, 0)
     first = 10 * np.sin(np.pi * val_y[0])
+    print(first)
     second = np.sum(
         np.power((val_y - 1), 2) * (
             1 + (10 * np.sin(np.pi * y_plus_1) ** 2))
     )
+    print(second)
     third = np.power((val_y_last - 1), 2)
+    print(third)
+    # uuu = u_sum(value, 10, 100, 4)
+    # print(uuu)
     return (np.pi / len(value)) * (
-        first + second + third) + u_sum(value, 10, 100, 4)
+        first + second + third)
 
 
 def f13(value):
