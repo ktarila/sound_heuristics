@@ -287,3 +287,57 @@ def f20(value):
             ))
         )
     return fit
+
+
+def f21_23(value, last):
+    """method for function 21 - 23
+       difference between these functions is the last
+       index in range
+    """
+    a_array = np.array([[4, 4, 4, 4],
+                        [1, 1, 1, 1],
+                        [8, 8, 8, 8],
+                        [6, 6, 6, 6],
+                        [3, 7, 3, 7],
+                        [2, 9, 2, 9],
+                        [5, 5, 3, 3],
+                        [8, 1, 8, 1],
+                        [6, 2, 6, 2],
+                        [7, 3.6, 7, 3.6]])
+    c_array = np.array([0.1, 0.2, 0.2, 0.4, 0.4, 0.6, 0.3, 0.7, 0.5, 0.5])
+
+    fit = 0
+    for i in range(last):
+        fit = fit - np.power(
+            (np.sum((value - a_array[i, :]) * (
+                value - a_array[i, :]).transpose()) + c_array[i]), -1
+        )
+
+    return fit
+
+
+def f21(value):
+    """multi modal function
+       fixed dimension. dimension value = 4
+    """
+    if len(value) != 4:
+        raise Exception("Dimension of f21 must be equal to 4")
+    return f21_23(value, 5)
+
+
+def f22(value):
+    """multi modal function
+       fixed dimension. dimension value = 4
+    """
+    if len(value) != 4:
+        raise Exception("Dimension of f22 must be equal to 4")
+    return f21_23(value, 7)
+
+
+def f23(value):
+    """multi modal function
+       fixed dimension. dimension value = 4
+    """
+    if len(value) != 4:
+        raise Exception("Dimension of f23 must be equal to 4")
+    return f21_23(value, 10)

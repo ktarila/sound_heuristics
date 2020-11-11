@@ -10,7 +10,7 @@ def main():
     """Main entry for solution"""
     print(cfg.NAME)
     cfg.RAND_VALUE = np.random.uniform(0, 1)
-    fitness_func = fitness.f20
+    fitness_func = fitness.f23
     domain = cfg.DOMAIN
     population = solution.init_population(cfg.DIM, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)

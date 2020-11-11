@@ -13,5 +13,5 @@ MINIMISATION = True
 RHO = 50
 RAND_VALUE = None
 # DOMAIN = [[-5, 10], [0, 15]]
-DOMAIN = [0, 1]
-DIM = 6
+DOMAIN = [0, 10]
+DIM = 4
