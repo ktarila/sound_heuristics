@@ -12,5 +12,6 @@ MINIMISATION = True
 # Could greatly influence the final result
 RHO = 50
 RAND_VALUE = None
-DOMAIN = [-65.53, 65.53]
-DIM = 2
+# DOMAIN = [[-5, 10], [0, 15]]
+DOMAIN = [-10, 10]
+DIM = 30

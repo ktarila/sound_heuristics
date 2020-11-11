@@ -10,7 +10,7 @@ def main():
     """Main entry for solution"""
     print(cfg.NAME)
     cfg.RAND_VALUE = np.random.uniform(0, 1)
-    fitness_func = fitness.f14
+    fitness_func = fitness.f2
     domain = cfg.DOMAIN
     population = solution.init_population(cfg.DIM, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)
@@ -51,18 +51,7 @@ def next_population(pop, fitness_function, iteration):
     movement = solution.compute_change(
         intensity, pop, fitness_function, cfg.MINIMISATION, iteration)
     next_pop = movement + pop
-    # keep next pop in range
-    # all greater than is upper limit minus random value
-    next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[1] - np.random.uniform(
-        0, cfg.DOMAIN[1])
-    # next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[
-    #     1] - np.random.uniform(0, 1)
-    # all less is lowwer limit plus random value
-    next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[0] + np.random.uniform(
-        0, cfg.DOMAIN[1])
-    # next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[
-    #     0] + np.random.uniform(0, 1)
-    # print(next_pop)
+    next_pop = solution.fix_boundary(next_pop)
     return next_pop
 
 

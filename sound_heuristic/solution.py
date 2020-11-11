@@ -11,14 +11,20 @@ def init_population(dim=2, size=50, search_space=None):
     """Create an initial population for a function"""
     pop = None
     if search_space is None:
-        search_space = np.array([-100, 100])
+        search_space = np.atleast_2d(np.array([-100, 100]))
+        # search_space = np.array([[-5, 10], [0, 15]])
+        # print(search_space.shape)
     else:
-        search_space = np.array(search_space)
-    pop = np.random.default_rng().uniform(
-        search_space[0], search_space[1], [size, dim])
-    # pop = np.stack(
-    #     [np.random.uniform(search_space[0],
-    #                        search_space[1], dim) for _ in range(size)])
+        search_space = np.atleast_2d(np.array(search_space))
+        if search_space.shape[0] == 1:
+            pop = np.random.default_rng().uniform(
+                search_space[0][0], search_space[0][1], [size, dim])
+        if search_space.shape[0] == 2:
+            # stack by columns because range depends on axis
+            pop = np.stack(
+                [np.random.uniform(
+                    search_space[0][i],
+                    search_space[1][i], size) for i in range(dim)], axis=1)
     return pop
 
 
@@ -173,3 +179,40 @@ def decay(iteration):
         every 100 intervals. Initial value at iteration = 0 is rho
     """
     return cfg.RHO * exp(-1 * iteration / 600)
+
+
+def fix_boundary(population):
+    """Adjust population to be in boundary"""
+    next_pop = np.copy(population)
+    search_space = np.atleast_2d(np.array(cfg.DOMAIN))
+    if search_space.shape[0] == 1:
+        # keep next pop in range
+        # all greater than is upper limit minus random value
+        next_pop[
+            next_pop > search_space[0][1]
+        ] = search_space[0][1] - np.random.uniform(0, search_space[0][1])
+        # next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[
+        #     1] - np.random.uniform(0, 1)
+        # all less is lowwer limit plus random value
+        next_pop[
+            next_pop < search_space[0][0]
+        ] = search_space[0][0] + np.random.uniform(0, search_space[0][1])
+        # next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[
+        #     0] + np.random.uniform(0, 1)
+    if search_space.shape[0] == 2:
+        # update first axis(0)
+        next_pop[:, 0][
+            next_pop[:, 0] < search_space[0][0]
+        ] = search_space[0][0] + np.random.uniform(0, search_space[1][0])
+        next_pop[:, 0][
+            next_pop[:, 0] > search_space[1][0]
+        ] = search_space[1][0] - np.random.uniform(0, search_space[1][0])
+
+        # update second axis
+        next_pop[:, 1][
+            next_pop[:, 1] < search_space[0][1]
+        ] = search_space[0][1] + np.random.uniform(0, search_space[1][1])
+        next_pop[:, 0][
+            next_pop[:, 1] > search_space[1][1]
+        ] = search_space[1][1] - np.random.uniform(0, search_space[1][1])
+    return next_pop

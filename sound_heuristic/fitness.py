@@ -140,7 +140,7 @@ def f13(value):
 
 
 def f14(value):
-    """Unimodal function
+    """Multi modal function
        dimension of value = 2
     """
     if len(value) != 2:
@@ -159,3 +159,47 @@ def f14(value):
     line = np.linspace(1, length, length)
     fit = np.power((1 / 500 + np.sum(1 / (line + bottom))), -1)
     return fit
+
+
+def f15(value):
+    """Multi modal function
+       dimension of value = 4
+    """
+    if len(value) != 4:
+        raise Exception("Dimension of f15 must be equal to 4")
+
+    array_a = np.array([0.1957, 0.1947, 0.1735, 0.16, 0.0844,
+                        0.0627, 0.0456, 0.0342, 0.0323, 0.0235, 0.0246])
+    array_b = np.array([0.25, 0.5, 1, 2, 4, 6, 8, 10, 12, 14, 16])
+    array_b = 1 / array_b
+
+    top = value[0] * (np.power(array_b, 2) + array_b * value[1])
+    bottom = np.power(array_b, 2) + (array_b * value[2]) + value[3]
+
+    return np.sum(np.power((array_a - (top / bottom)), 2))
+
+
+def f16(value):
+    """multi modal function
+       dimension of value = 2
+    """
+    if len(value) != 2:
+        raise Exception("Dimension of f16 must be equal to 2")
+    return (4 * np.power(value[0], 2)) - (
+        2.1 * np.power(value[0], 4)) + (
+            (1 / 3) * np.power(value[0], 6)) + value[0] * value[1] - (
+                4 * np.power(value[1], 2)) + (
+                    4 * np.power(value[1], 4))
+
+
+def f17(value):
+    """multi modal function
+       dimension of value = 2
+    """
+    first = np.power((value[1] - (
+        np.power(value[0], 2)) * 5.1 / (
+            4 * np.power(np.pi, 2)) + (
+                5 / np.pi) * value[0] - 6), 2)
+
+    second = 10 * (1 - (1 / (8 * np.pi))) * np.cos(value[0])
+    return first + second + 10
