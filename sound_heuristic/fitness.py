@@ -228,6 +228,8 @@ def f19(value):
     """multimodal function
        dimension of value = 3
     """
+    if len(value) != 3:
+        raise Exception("Dimension of f19 must be equal to 3")
     array_a = np.array([[3, 10, 30],
                         [0.1, 10, 35],
                         [3, 10, 30],
@@ -247,6 +249,34 @@ def f19(value):
     #             value[j] - array_p[i, j]) ** 2
     #     cont = array_c[i] * np.exp(col_sum)
     #     fit = fit - cont
+
+    fit = 0
+    for i in range(4):
+        fit = fit - array_c[i] * np.exp(
+            -(np.sum(
+                array_a[i, :] * np.power(
+                    (value - array_p[i, :]), 2)
+            ))
+        )
+    return fit
+
+
+def f20(value):
+    """multimodal function
+       dimension of value = 6
+    """
+    if len(value) != 6:
+        raise Exception("Dimension of f19 must be equal to 6")
+    array_a = np.array([[10, 3, 17, 3.5, 1.7, 8],
+                        [0.05, 10, 17, 0.1, 8, 14],
+                        [3, 3.5, 1.7, 10, 17, 8],
+                        [17, 8, 0.05, 10, 0.1, 14]])
+
+    array_c = np.array([1, 1.2, 3, 3.2])
+    array_p = np.array([[0.1312, 0.1696, 0.5569, 0.0124, 0.8283, 0.5886],
+                        [0.2329, 0.4135, 0.8307, 0.3736, 0.1004, 0.9991],
+                        [0.2348, 0.1415, 0.3522, 0.2883, 0.3047, 0.6650],
+                        [0.4047, 0.8828, 0.8732, 0.5743, 0.1091, 0.0381]])
 
     fit = 0
     for i in range(4):

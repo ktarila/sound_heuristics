@@ -14,4 +14,4 @@ RHO = 50
 RAND_VALUE = None
 # DOMAIN = [[-5, 10], [0, 15]]
 DOMAIN = [0, 1]
-DIM = 3
+DIM = 6
