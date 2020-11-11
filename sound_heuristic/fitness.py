@@ -203,3 +203,57 @@ def f17(value):
 
     second = 10 * (1 - (1 / (8 * np.pi))) * np.cos(value[0])
     return first + second + 10
+
+
+def f18(value):
+    """multimodal function
+       dimension of value = 2
+    """
+    first = 1 + np.power((value[0] + value[1] + 1), 2) * (
+        19 - 14 * value[0] + 3 * np.power(value[0], 2) - (
+            14 * value[1]) + 6 * value[0] * value[1] + (
+                3 * np.power(value[1], 2))
+    )
+
+    second = 30 + np.power((2 * value[0] - 3 * value[1]), 2) * (
+        18 - 32 * value[0] + 12 * np.power(value[0], 2) + (
+            48 * value[1]) - 36 * value[0] * value[1] + (
+                27 * np.power(value[1], 2))
+    )
+
+    return first * second
+
+
+def f19(value):
+    """multimodal function
+       dimension of value = 3
+    """
+    array_a = np.array([[3, 10, 30],
+                        [0.1, 10, 35],
+                        [3, 10, 30],
+                        [0.1, 10, 35]])
+    array_c = np.array([1, 1.2, 3, 3.2])
+    array_p = np.array([[0.3689, 0.117, 0.2673],
+                        [0.4699, 0.4387, 0.747],
+                        [0.1091, 0.8732, 0.5547],
+                        [0.03815, 0.5743, 0.8828]])
+
+    # fit = 0
+    # for i in range(4):
+    #     col_sum = 0
+    #     length = len(value)
+    #     for j in range(length):
+    #         col_sum = col_sum - array_a[i, j] * (
+    #             value[j] - array_p[i, j]) ** 2
+    #     cont = array_c[i] * np.exp(col_sum)
+    #     fit = fit - cont
+
+    fit = 0
+    for i in range(4):
+        fit = fit - array_c[i] * np.exp(
+            -(np.sum(
+                array_a[i, :] * np.power(
+                    (value - array_p[i, :]), 2)
+            ))
+        )
+    return fit

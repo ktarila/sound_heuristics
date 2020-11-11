@@ -10,14 +10,14 @@ def main():
     """Main entry for solution"""
     print(cfg.NAME)
     cfg.RAND_VALUE = np.random.uniform(0, 1)
-    fitness_func = fitness.f2
+    fitness_func = fitness.f19
     domain = cfg.DOMAIN
     population = solution.init_population(cfg.DIM, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
     initial_vector = population[initial_best[0]]
     global_best = population[initial_best[0]]
-    for iteration in range(1, 1000):
+    for iteration in range(1, 500):
         print("Iteration:", iteration)
         population = next_population(population, fitness_func, iteration)
         fitnesses = solution.compute_fitness(fitness_func, population)
