@@ -112,27 +112,13 @@ def f12(value):
     """multimodal function"""
     length = len(value)
     ff1 = 10 * np.power((np.sin(np.pi * (1 + (value[0] + 1) / 4))), 2)
-    # print(ff1)
-
     ff2 = np.power(((value[0:length - 1] + 1) / 4), 2)
-    # print(ff2)
-
     ff3 = (
         1 + 10 * np.power((np.sin(
             np.pi * (1 + (value[1:length] + 1) / 4))), 2)
     )
-    # print(ff3)
-
     ff4 = np.power(((value[length - 1] + 1) / 4), 2)
-    # print(ff4)
-
-    # print(np.sum(ff2 * ff3))
-
     total = (np.pi / length) * (ff1 + np.sum(ff2 * ff3) + ff4)
-    # print(total)
-    # uuu = u_sum(value, 10, 100, 4)
-    # print(uuu)
-    # print(total + u_sum(value, 10, 100, 4))
     return total + u_sum(value, 10, 100, 4)
 
 
@@ -141,12 +127,11 @@ def f13(value):
     last = len(value) - 1
     first = np.sin(3 * np.pi * value[0]) ** 2
     second = np.sum(
-        np.power((value - 1), 2) * (
-            1 + np.sin((3 * np.pi * value) + 1) ** 2)
+        np.power((value[0:len(value) - 1] - 1), 2) * (
+            1 + np.sin(3 * np.pi * value[1:len(value)]) ** 2)
     )
     third = np.power((value[last] - 1), 2) * (
         1 + np.sin(2 * np.pi * value[last]) ** 2)
-
     return 0.1 * (first + second + third) + u_sum(value, 5, 100, 4)
 
 

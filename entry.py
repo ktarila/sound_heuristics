@@ -11,7 +11,7 @@ def main():
     print(cfg.NAME)
     # cfg.RAND_VALUE = np.random.uniform(0, 1)
     cfg.RAND_VALUE = 0.1
-    fitness_func = fitness.f12
+    fitness_func = fitness.f13
     domain = cfg.DOMAIN
     population = solution.init_population(cfg.DIM, 50, domain)
     fitnesses = solution.compute_fitness(fitness_func, population)
