@@ -15,3 +15,4 @@ RAND_VALUE = None
 # DOMAIN = [[-5, 10], [0, 15]]
 DOMAIN = [-50, 50]
 DIM = 30
+FITNESS_FUNCTION = None
