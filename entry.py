@@ -134,13 +134,11 @@ def initialize():
 def find_parameter():
     """exhaustive search for parameters"""
     combinations = solution.parameter_combinations()
-    domain = cfg.DOMAIN
-    pop = solution.init_population(cfg.DIM, 50, domain)
     cfg.RHO = combinations[0, 0]
     cfg.MOMENTUM = combinations[0, 1]
     # print(combinations)
     best_param = combinations[0, :]
-    best = best_of_five(pop)
+    best = best_of_five()
     print(best_param, best)
     length = len(combinations)
     for i in range(1, length):
@@ -148,7 +146,7 @@ def find_parameter():
         print(i)
         cfg.RHO = combinations[i, 0]
         cfg.MOMENTUM = combinations[i, 1]
-        res = best_of_five(pop)
+        res = best_of_five()
         print(combinations[i, :], res)
         if cfg.MINIMISATION:
             if res < best:
@@ -163,15 +161,16 @@ def find_parameter():
     print("----------------------")
 
 
-def best_of_five(population):
+def best_of_five():
     """get best result out of five"""
-    results = [run_sound_search(population, 1000) for _ in range(20)]
+    results = [run_sound_search(100) for _ in range(20)]
     return np.average(results)  # return average
     # return np.min(results) if cfg.MINIMISATION else np.max(results)
 
 
-def run_sound_search(population, iterations):
+def run_sound_search(iterations):
     """run sound search"""
+    population = solution.init_population(cfg.DIM, 50, cfg.DOMAIN)
     fitness_func = cfg.FITNESS_FUNCTION
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
