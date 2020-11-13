@@ -113,7 +113,7 @@ def set_hyperparams(index):
     if index < 1 or index > 23:
         raise Exception("Domain index should be between 1 and 23")
     params = {
-        1: (27.89473684, 0.28947368),
+        1: (18.16326531, 0.69387755),
         2: (64.73684211, 0.10526316)
     }
     cfg.RHO = params[index][0]
@@ -144,6 +144,7 @@ def initialize():
 def find_parameter():
     """exhaustive search for parameters"""
     combinations = solution.parameter_combinations()
+    print(len(combinations), "Combinations")
     cfg.RHO = combinations[0, 0]
     cfg.MOMENTUM = combinations[0, 1]
     # print(combinations)
@@ -200,6 +201,6 @@ def run_sound_search(iterations):
 
 if __name__ == '__main__':
     initialize()
-    find_parameter()
-    # set_hyperparams(cfg.INDEX)
-    # main()
+    # find_parameter()
+    set_hyperparams(cfg.INDEX)
+    main()
