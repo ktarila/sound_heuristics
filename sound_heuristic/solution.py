@@ -64,6 +64,10 @@ def compute_change(intensity,
     uniform_rand = np.random.rand(len(cum_total), 1)
     # Get index
     neighbours = population[(uniform_rand < cum_total).argmax(axis=1)]
+
+    # maximum based on highest intensity --- no probability
+    neighbours = population[intensity.argmax(axis=1)]
+
     # Get population array
     pop_fit = compute_fitness(fitness_function, population)
     neighbour_fitness = compute_fitness(fitness_function, neighbours)
@@ -221,10 +225,9 @@ def fix_boundary(population):
 
 def parameter_combinations():
     """get possible variables"""
-    rho = np.linspace(20, 70, 20)
-    momentum = np.linspace(0, 0.5, 20)
+    rho = np.linspace(10, 90, 50)
+    momentum = np.linspace(0, 1, 50)
     # cartesian product to get all combinations
     cart = np.transpose(
         [np.tile(rho, len(momentum)), np.repeat(momentum, len(rho))])
-    print(len(cart))
     return cart

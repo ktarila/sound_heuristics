@@ -8,37 +8,46 @@ from sound_heuristic import fitness
 
 
 def main():
-    """Main entry for solution"""
+    """Main entry of program"""
     print(cfg.NAME)
-    get_domain(cfg.INDEX)
-    fitness_func = cfg.FITNESS_FUNCTION
-    domain = cfg.DOMAIN
-    population = solution.init_population(cfg.DIM, 50, domain)
+    results = [run_search(cfg.FITNESS_FUNCTION) for _ in range(30)]
+    print()
+    print("Median", np.median(results))
+    print("Mean", np.average(results))
+    print("Best", np.min(results))
+    # print(results)
+
+
+def run_search(fitness_func):
+    """Run sound search"""
+    print('.', end='', flush=True)
+    population = solution.init_population(cfg.DIM, 50, cfg.DOMAIN)
     fitnesses = solution.compute_fitness(fitness_func, population)
     initial_best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
-    initial_vector = population[initial_best[0]]
+    # initial_vector = population[initial_best[0]]
     global_best = population[initial_best[0]]
     for iteration in range(cfg.ITERATIONS):
-        print("Iteration:", iteration)
+        # print("Iteration:", iteration)
         population = next_population(population, fitness_func, iteration)
         fitnesses = solution.compute_fitness(fitness_func, population)
         # print("******fitnesses*****")
         # print(fitnesses)
         best = solution.get_best_index(fitnesses, cfg.MINIMISATION)
         worst = solution.get_worst_index(fitnesses, cfg.MINIMISATION)
-        print("  Best:", fitnesses[best])
+        # print("  Best:", fitnesses[best])
         # print("  Best:", population[best[0]], fitnesses[best])
-        print("  Worst:", fitnesses[worst])
+        # print("  Worst:", fitnesses[worst])
         # print("  Worst:", population[worst[0]], fitnesses[worst])
         global_best = solution.compare_fitness(
             population[best[0]],
             global_best, fitness_func, cfg.MINIMISATION)
         if fitness_func(global_best) != fitnesses[best]:
             population[worst[0]] = global_best
-        print("  Global Best", fitness_func(global_best))
-        print("--------------------------------------------")
+        # print("  Global Best", fitness_func(global_best))
+        # print("--------------------------------------------")
     # print("Intial Best:", initial_vector, fitness_func(initial_vector))
-    print("Intial Best:", fitness_func(initial_vector))
+    # print("Intial Best:", fitness_func(initial_vector))
+    return fitness_func(global_best)
     # print("  Global Best", global_best, fitness_func(global_best))
     # zeros = np.zeros(30)
     # print(zeros)
@@ -104,7 +113,8 @@ def set_hyperparams(index):
     if index < 1 or index > 23:
         raise Exception("Domain index should be between 1 and 23")
     params = {
-        1: (25.26315789, 0.36842105)
+        1: (27.89473684, 0.28947368),
+        2: (64.73684211, 0.10526316)
     }
     cfg.RHO = params[index][0]
     cfg.MOMENTUM = params[index][1]
@@ -191,4 +201,5 @@ def run_sound_search(iterations):
 if __name__ == '__main__':
     initialize()
     find_parameter()
-    main()
+    # set_hyperparams(cfg.INDEX)
+    # main()
