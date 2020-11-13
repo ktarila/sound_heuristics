@@ -25,6 +25,7 @@ def init_population(dim=2, size=50, search_space=None):
                 [np.random.uniform(
                     search_space[0][i],
                     search_space[1][i], size) for i in range(dim)], axis=1)
+    cfg.HISTORY = np.zeros(pop.shape)
     return pop
 
 
@@ -216,3 +217,14 @@ def fix_boundary(population):
             next_pop[:, 1] > search_space[1][1]
         ] = search_space[1][1] - np.random.uniform(0, search_space[1][1])
     return next_pop
+
+
+def parameter_combinations():
+    """get possible variables"""
+    rho = np.linspace(20, 70, 20)
+    momentum = np.linspace(0, 0.5, 20)
+    # cartesian product to get all combinations
+    cart = np.transpose(
+        [np.tile(rho, len(momentum)), np.repeat(momentum, len(rho))])
+    print(len(cart))
+    return cart
