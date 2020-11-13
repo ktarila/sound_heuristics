@@ -201,6 +201,6 @@ def run_sound_search(iterations):
 
 if __name__ == '__main__':
     initialize()
-    # find_parameter()
-    set_hyperparams(cfg.INDEX)
-    main()
+    find_parameter()
+    # set_hyperparams(cfg.INDEX)
+    # main()

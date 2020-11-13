@@ -225,8 +225,8 @@ def fix_boundary(population):
 
 def parameter_combinations():
     """get possible variables"""
-    rho = np.linspace(10, 90, 50)
-    momentum = np.linspace(0, 1, 50)
+    rho = np.linspace(10, 95, 30)
+    momentum = np.linspace(0, 1, 30)
     # cartesian product to get all combinations
     cart = np.transpose(
         [np.tile(rho, len(momentum)), np.repeat(momentum, len(rho))])
