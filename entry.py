@@ -113,7 +113,8 @@ def set_hyperparams(index):
     if index < 1 or index > 23:
         raise Exception("Domain index should be between 1 and 23")
     params = {
-        1: (18.16326531, 0.69387755),
+        # 1: (18.16326531, 0.69387755),
+        1: (27.89473684, 0.28947368),
         2: (64.73684211, 0.10526316)
     }
     cfg.RHO = params[index][0]
@@ -201,6 +202,6 @@ def run_sound_search(iterations):
 
 if __name__ == '__main__':
     initialize()
-    find_parameter()
+    # find_parameter()
     # set_hyperparams(cfg.INDEX)
-    # main()
+    main()

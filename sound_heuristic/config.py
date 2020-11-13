@@ -12,8 +12,8 @@ MINIMISATION = True
 # Could greatly influence the final result
 ITERATIONS = 1000
 INDEX = 1
-RHO = 45
-MOMENTUM = 0.02
+RHO = 27.89473684
+MOMENTUM = 0.28947368
 RAND_VALUE = None
 # DOMAIN = [[-5, 10], [0, 15]]
 DOMAIN = [-50, 50]
