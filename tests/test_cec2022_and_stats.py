@@ -53,7 +53,26 @@ class TestCEC2022(unittest.TestCase):
             C.get_problem(13)
 
 
+@unittest.skipUnless((C.DATA_DIR / "entries").exists(),
+                     "competition results not downloaded")
+class TestPublished(unittest.TestCase):
+    def test_entries_read_correctly(self):
+        results = C.published(10)
+        self.assertEqual(len(results), 12)
+        for name, errors in results.items():
+            self.assertEqual(sorted(errors), list(range(1, 13)))
+            self.assertTrue(all(e.shape == (30,) for e in errors.values()))
+        # means reported for the entries in other papers
+        self.assertAlmostEqual(results["EA4eig"][9].mean(), 185.5, places=1)
+        self.assertAlmostEqual(results["NL-SHADE-RSP-MID"][10].mean(), 4.53,
+                               places=2)
+
+
 class TestStats(unittest.TestCase):
+    def test_snap(self):
+        np.testing.assert_array_equal(S.snap([5e-9, 1e-8, 2e-8, 3.0]),
+                                      [0, 0, 2e-8, 3.0])
+
     def test_chi2_matches_tables(self):
         for x, df, p in [(3.841, 1, 0.05), (7.815, 3, 0.05),
                          (16.919, 9, 0.05), (6.635, 1, 0.01)]:

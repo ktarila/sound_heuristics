@@ -1,24 +1,51 @@
 """Compare saved benchmark results with statistical tests.
 
     python compare.py results/cec2022_D10_*.json --control sound
+    python compare.py results/cec2022_D10_sound.json --published
 
 Prints, for every function, each algorithm's mean error, and whether the
 control is significantly better (+), worse (-) or not different (=) from
 it (Wilcoxon rank-sum test, 5% level). Then the Friedman test on the mean
 errors across functions, and Holm's comparison of the control with each
-other algorithm. Errors below 1e-8 count as 0.
+other algorithm. Errors up to 1e-8 count as 0, and all errors are
+compared to 6 significant figures (some result files are written to only
+6), so equal results are not mistaken for different ones.
+
+``--published`` adds the CEC 2022 competition entries, from the
+organisers' result files (downloaded on first use).
 """
 import argparse
 import json
 
 import numpy as np
 
-from sound_heuristic import stats
+from sound_heuristic import cec2022, stats
 
 
 def load(paths):
-    """Saved results, checked to cover the same functions and runs."""
-    records = [json.load(open(path, encoding="utf-8")) for path in paths]
+    """Saved results, one record per file."""
+    return [json.load(open(path, encoding="utf-8")) for path in paths]
+
+
+def entries(first, names):
+    """Records for the CEC 2022 competition entries ``names`` (all if
+    empty), matching the suite of record ``first``."""
+    if first["suite"] != "cec2022":
+        raise SystemExit("--published needs CEC 2022 results")
+    dim = first["dim"]
+    results = cec2022.published(dim)
+    unknown = set(names) - set(results)
+    if unknown:
+        raise SystemExit(f"unknown entries {sorted(unknown)}; "
+                         f"choose from {list(results)}")
+    return [{"name": name, "suite": "cec2022", "dim": dim, "runs": 30,
+             "evaluations": cec2022.BUDGET[dim],
+             "errors": {str(f): list(errors[f]) for f in range(1, 13)}}
+            for name, errors in results.items() if not names or name in names]
+
+
+def check(records):
+    """Names, functions and errors, checked to cover the same functions."""
     funcs = list(records[0]["errors"])
     for record in records:
         if list(record["errors"]) != funcs:
@@ -28,10 +55,15 @@ def load(paths):
             raise ValueError(f"{record['name']} is from a different suite")
     names = [record["name"] for record in records]
     if len(set(names)) != len(names):
-        raise ValueError("every result file needs a different name")
-    errors = {record["name"]: {f: np.array(record["errors"][f])
+        raise ValueError("every result needs a different name")
+    errors = {record["name"]: {f: _round(stats.snap(record["errors"][f]))
                                for f in funcs} for record in records}
-    return names, funcs, errors, records[0]
+    return names, funcs, errors
+
+
+def _round(values, digits=6):
+    """``values`` to ``digits`` significant figures."""
+    return np.array([float(f"{v:.{digits}g}") for v in values])
 
 
 def main():
@@ -41,9 +73,17 @@ def main():
     parser.add_argument("--control", default=None,
                         help="name of the algorithm to compare the others "
                              "with (default: the first file)")
+    parser.add_argument("--published", nargs="*", default=None,
+                        metavar="NAME",
+                        help="add the CEC 2022 competition entries (all, "
+                             "or the ones named)")
     parser.add_argument("--alpha", type=float, default=0.05)
     args = parser.parse_args()
-    names, funcs, errors, first = load(args.files)
+    records = load(args.files)
+    first = records[0]
+    if args.published is not None:
+        records += entries(first, args.published)
+    names, funcs, errors = check(records)
     control = args.control or names[0]
     if control not in names:
         raise SystemExit(f"--control must be one of {names}")
@@ -61,18 +101,18 @@ def main():
     for f in funcs:
         cells = []
         for name in names:
-            mean = np.mean(np.where(errors[name][f] < stats.TOLERANCE, 0,
-                                    errors[name][f]))
             mark = ""
             if name != control:
                 test = stats.rank_sum(errors[control][f], errors[name][f],
                                       args.alpha)
                 mark = {"a": "+", "b": "-", "=": "="}[test.winner]
                 tally[name]["+-=".index(mark)] += 1
-            cells.append(f"{mean:.3g} {mark}".rstrip().rjust(width))
+            cells.append(f"{np.mean(errors[name][f]):.3g} {mark}"
+                         .rstrip().rjust(width))
         print(f"F{f:<4}" + "".join(cells))
-    print("\n+/-/= totals: " + "; ".join(
-        f"vs {n}: {t[0]}/{t[1]}/{t[2]}" for n, t in tally.items()))
+    print(f"\n{control} better / worse / no different:")
+    for name, (better, worse, same) in tally.items():
+        print(f"  vs {name:{width}} {better:2} / {worse:2} / {same:2}")
 
     table = np.array([[np.mean(errors[n][f]) for n in names] for f in funcs])
     result = stats.friedman(table)

@@ -2,8 +2,9 @@
 
 Written from the competition definitions, following the organisers'
 Python code and its known quirks (marked "as in the official code").
-Checked at each function's best point; not yet compared value for value
-with the organisers' code. The data
+Checked at each function's best point, and against the competition
+entries' published results: the values where runs get stuck agree to
+5-8 digits. The data
 files (shifts, rotations, shuffles) are downloaded from the organisers'
 GitHub on first use and are not included here: that repository has no
 license.
@@ -59,6 +60,60 @@ def _load(name):
     if not path.exists():
         download()
     return np.loadtxt(path)
+
+
+# -- published results of the competition entries --------------------
+
+RESULTS_URL = ("https://raw.githubusercontent.com/P-N-Suganthan/2022-SO-BO/"
+               "main/2022-Full-Download.zip")
+# entries with full result files: file prefix -> name. The first four are
+# in their official order (1st to 4th); the rest are in no order.
+ENTRIES = {
+    "EA4eigN100_10": "EA4eig", "NL-SHADE-LBC": "NL-SHADE-LBC",
+    "NL-SHADE-RSP-MID": "NL-SHADE-RSP-MID", "S_LSHADE_DP": "S-LSHADE-DP",
+    "jSObinexpEig": "jSObinexpEig", "MTT_SHADE": "MTT-SHADE",
+    "IMPML-SHADE": "IMPML-SHADE", "SPHH_Ensemble": "SPHH-Ensemble",
+    "Co-PPSO": "Co-PPSO", "OMCSOMA": "OMCSOMA", "NLSOMACLP": "NLSOMACLP",
+    "ZOCMAES": "ZOCMAES"}
+_RESULT_FILE = re.compile(r"Results_and_Ranking/.*/(" + "|".join(
+    map(re.escape, ENTRIES)) + r")_\d+_(10|20)\.txt$")
+
+
+def download_results(data_dir=None):
+    """Fetch the entries' result files (from a 15 MB archive; only the
+    result files are kept) into ``data_dir/entries``."""
+    folder = Path(data_dir or DATA_DIR) / "entries"
+    folder.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(RESULTS_URL, timeout=300) as response:
+        archive = zipfile.ZipFile(io.BytesIO(response.read()))
+    for member in archive.namelist():
+        if _RESULT_FILE.search(member):
+            (folder / os.path.basename(member)).write_bytes(
+                archive.read(member))
+
+
+def published(dim=10):
+    """Final errors of the competition entries: {name: {F: 30 errors}}.
+
+    Each result file has 17 rows of 30 runs: errors at 16 points during
+    the run (the last at the end of the budget), then the evaluations
+    used.
+    """
+    folder = DATA_DIR / "entries"
+    if not folder.exists():
+        download_results()
+    results = {}
+    for prefix, name in ENTRIES.items():
+        results[name] = {}
+        for index in range(1, 13):
+            text = (folder / f"{prefix}_{index}_{dim}.txt").read_text()
+            table = np.array([[float(v) for v in re.split(r"[\s,]+",
+                                                         line.strip())]
+                              for line in text.splitlines() if line.strip()])
+            if table.shape != (17, 30):
+                raise ValueError(f"{prefix} F{index}: shape {table.shape}")
+            results[name][index] = table[15]
+    return results
 
 
 # -- building blocks -------------------------------------------------

@@ -117,6 +117,7 @@ python entry.py --tune 5 9 10 12 -n 500 --samples 40 --runs 5 --seed 0
 python benchmark.py                          # reproduce the results below
 python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_sound.json
 python compare.py results/cec2022_D10_*.json --control sound
+python compare.py results/cec2022_D10_sound.json --published  # vs CEC 2022 entries
 python -m unittest discover tests
 ```
 
@@ -318,8 +319,53 @@ overall difference between the four (p = 0.55; Holm's adjusted p-values
 are all above 0.8). With only 12 functions it can detect only large
 differences.
 
-These results show how the parts compare, not how good the method is: it
-has not yet been compared with strong methods on these functions.
+These results show how the parts compare, not how good the method is.
+
+#### Against the competition entries
+
+The organisers publish the results of the 12 entries that sent in all
+their runs, 30 per function, with the same budget. `python compare.py
+results/cec2022_D10_sound.json --published` downloads them and runs the
+same tests (full output in `results/cec2022_D10_published.txt`). Errors
+are compared to 6 significant figures, because some entries wrote only
+6. Average rank over the 12 functions (1 = best):
+
+| Entry (place in the competition) | Average rank | Sound search better / worse / same |
+|---|---|---|
+| EA4eig (1st) | 3.92 | 0 / 8 / 4 |
+| S-LSHADE-DP (4th) | 4.21 | 1 / 6 / 5 |
+| NL-SHADE-LBC (2nd) | 5.29 | 1 / 5 / 6 |
+| jSObinexpEig | 6.17 | 2 / 5 / 5 |
+| IMPML-SHADE | 6.17 | 2 / 6 / 4 |
+| NL-SHADE-RSP-MID (3rd) | 6.42 | 3 / 4 / 5 |
+| OMCSOMA | 6.67 | 2 / 4 / 6 |
+| **Sound search** | **7.33** | – |
+| MTT-SHADE | 7.33 | 3 / 3 / 6 |
+| NLSOMACLP | 7.58 | 3 / 4 / 5 |
+| Co-PPSO | 9.58 | 5 / 1 / 6 |
+| SPHH-Ensemble | 9.83 | 5 / 4 / 3 |
+| ZOCMAES | 10.50 | 9 / 2 / 1 |
+
+Sound search places 8th of 13, tied with MTT-SHADE. Holm's test finds no
+entry significantly better or worse than it (the smallest adjusted
+p-value is 0.38, for EA4eig).
+
+- **Good:** F6 and F12, where it beats 8 of the 12 entries and loses to
+  2.
+- **Poor:** F2, F4, F7, F8 and F10, where 8 to 11 entries beat it.
+
+Tracing the runs shows why. On F2, F4, F10 and F12 the best value stops
+improving after 5–35% of the budget (median of 8 runs), so most of the
+evaluations are wasted. The settings were chosen for the classic
+functions, whose budget is 13 times smaller (15,000 evaluations against
+200,000).
+
+The comparison also checks the CEC 2022 code in this repository. The
+values where runs get stuck agree with the entries' own results to 5–8
+digits: F4 (0.995, 1.99, 2.98, …), F9 (229.28438) and F12 (159.3687).
+EA4eig's result on F9 (185.5) is lower than any other entry's typical
+result. Biedrzycki (2024) found that EA4eig could evaluate points outside
+the limits, which the official code allows.
 
 ### Strengths and weaknesses
 
@@ -340,8 +386,9 @@ and the noisy quartic (f7), which is worse than in version 1.
   The CEC 2022 results are free of this, but so far only at 10
   coordinates. The CEC 2017 set (Awad et al., 2016) would be another
   independent test.
-- The CEC 2022 code is checked at each function's best point, but has
-  not yet been compared value for value with the organisers' code.
+- The CEC 2022 code has not been run side by side with the organisers'
+  code. It is checked at each function's best point and against the
+  values in the entries' results (above).
 - GWO, PSO and GSA are classic methods, not the strongest current ones.
   Their numbers come from a paper, not from runs with the same seeds.
 - Several parts are borrowed from existing methods (cited above): the
@@ -390,6 +437,10 @@ f4, f10, f12 and f13).
   numerical optimization.* Technical report, Nanyang Technological
   University, Singapore; Jordan University of Science and Technology;
   Zhengzhou University.
+- Biedrzycki, R. (2024). Revisiting CEC 2022 ranking: A new ranking
+  method and influence of parameter tuning. *Swarm and Evolutionary
+  Computation*, 89, 101623.
+  [doi:10.1016/j.swevo.2024.101623](https://doi.org/10.1016/j.swevo.2024.101623)
 - Demšar, J. (2006). Statistical comparisons of classifiers over multiple
   data sets. *Journal of Machine Learning Research*, 7, 1–30.
   [jmlr.org/papers/v7/demsar06a.html](https://www.jmlr.org/papers/v7/demsar06a.html)

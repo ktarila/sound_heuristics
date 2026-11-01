@@ -9,8 +9,8 @@
   the p-values because several comparisons are made at once.
 
 Pass errors (how far above the best possible value a result is); lower
-is better. Errors below ``TOLERANCE`` count as 0, as in the CEC
-competitions.
+is better. Errors up to ``TOLERANCE`` count as 0, as in the CEC
+competitions (some entries write a solved run as exactly 1e-8).
 """
 import math
 from collections import namedtuple
@@ -33,10 +33,10 @@ def _ranks(values):
     return (low + high + 1) / 2
 
 
-def _snap(values):
-    """Errors below TOLERANCE become 0."""
+def snap(values):
+    """Errors up to TOLERANCE become 0."""
     values = np.asarray(values, dtype=float)
-    return np.where(np.abs(values) < TOLERANCE, 0.0, values)
+    return np.where(np.abs(values) <= TOLERANCE, 0.0, values)
 
 
 def normal_sf(z):
@@ -88,7 +88,7 @@ def rank_sum(a, b, alpha=0.05):
     "a" or "b" if that sample is significantly lower at level ``alpha``,
     otherwise "=".
     """
-    a, b = _snap(a), _snap(b)
+    a, b = snap(a), snap(b)
     n1, n2 = a.size, b.size
     ranks = _ranks(np.concatenate([a, b]))
     u = ranks[:n1].sum() - n1 * (n1 + 1) / 2
@@ -113,7 +113,7 @@ def friedman(table):
     Returns the average rank of each algorithm (1 = best), the test
     statistic, and its p-value (with the usual correction for ties).
     """
-    table = _snap(table)
+    table = snap(table)
     n_problems, k = table.shape
     ranks = np.array([_ranks(row) for row in table])
     average = ranks.mean(axis=0)
