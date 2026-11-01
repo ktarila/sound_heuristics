@@ -10,11 +10,12 @@ Infrasonic Mating Displays in Peafowls*, Journal of Advances in Mathematics
 and Computer Science 36(5): 98–106, 2021.
 [doi:10.9734/JAMCS/2021/v36i530366](https://doi.org/10.9734/JAMCS/2021/v36i530366)
 
-This is version 2. The sound model (steps 1–3 below) follows the paper,
-with two changes: loudness comes from an agent's place in the ranking
-rather than its raw value, and a loudness exponent `κ` rises during the
-run. The rest was reworked to fix problems found in version 1 (see
-[What changed from version 1](#what-changed-from-version-1)).
+This is version 3, in progress: version 2 plus starting the group again
+when it gets stuck (step 8). The sound model (steps 1–3 below) follows
+the paper, with two changes: loudness comes from an agent's place in the
+ranking rather than its raw value, and a loudness exponent `κ` rises
+during the run. The rest was reworked to fix problems found in version 1
+(see [What changed from version 1](#what-changed-from-version-1)).
 
 ## How it works
 
@@ -101,6 +102,20 @@ of the chosen one much faster than the group can. On the sphere function
 (f1), spending every evaluation on the sound phase gives an average
 result of 9e−5; handing the last 30% to the refinement gives 2.5e−20.
 
+### 8. Starting again when stuck
+
+A group can stop making progress long before the sound phase ends. Either
+every agent ends up equally good, or the agents stay spread out over
+different valleys and almost no move is accepted. Then the group starts
+again from new random places, and loudness again counts little at first
+(`κ` restarts at 1). The best point found so far is always kept, and the
+refinement starts from it.
+
+The group counts as stuck when its best value has not really improved
+for 10% of all evaluations (`stall`). A real gain is at least 1% of the
+spread between the group's best and worst values, so it does not depend
+on the scale or offset of the function.
+
 A run with `n` agents and `iterations` iterations uses
 `n × (iterations + 1)` function evaluations, the same as one evaluation per
 agent per iteration.
@@ -153,6 +168,7 @@ print(result.best_fitness, result.evaluations)
 | `kappa` | 4 | how much loudness counts at the end of the run (starts at 1) |
 | `refine` | 0.3 | share of evaluations for the final refinement |
 | `archive` | 1.0 | echoes kept, as a multiple of the number of agents |
+| `stall` | 0.1 | start the group again after this share of all evaluations without a real gain (0: never) |
 | `pop_size` | 50 | number of agents |
 
 ## Results
@@ -366,6 +382,29 @@ digits: F4 (0.995, 1.99, 2.98, …), F9 (229.28438) and F12 (159.3687).
 EA4eig's result on F9 (185.5) is lower than any other entry's typical
 result. Biedrzycki (2024) found that EA4eig could evaluate points outside
 the limits, which the official code allows.
+
+#### Version 3: starting again when stuck
+
+The tables above are for version 2. Version 3 adds step 8. Its
+settings were chosen on the classic functions moved and turned, at 30
+coordinates with 300,000 evaluations, not on CEC 2022.
+
+On CEC 2022 (`results/cec2022_D10_v3-restart.json`), version 3 beats
+version 2 on 4 functions and loses on 1:
+
+| | F2 | F4 | F7 | F10 | F12 |
+|---|---|---|---|---|---|
+| version 2 | 2.82 | 6.43 | **0.176** | 104 | 161 |
+| version 3 | **0.664** | **5.14** | 0.487 | **100** | **160** |
+
+Its average rank among the competition entries improves from 7.33 to
+6.92. It is still 8th of 13, now just behind OMCSOMA (6.67) and
+NL-SHADE-RSP-MID (6.42). F7 is worse because that function improves in
+jumps after long pauses, and a restart can come in the middle of a pause.
+On the classic functions at the usual budget, nothing changes.
+
+Starting again does not get past the traps on F9, F10 and F12. Each new
+group falls into the same trap as the last one.
 
 ### Strengths and weaknesses
 

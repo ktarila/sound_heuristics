@@ -23,6 +23,8 @@ import numpy as np
 from sound_heuristic import config as cfg
 
 Result = namedtuple("Result", "best_x best_fitness evaluations curve")
+GAIN = 0.01  # share of the group's spread of values that counts as a gain
+STUCK = 1e-12  # values closer than this (relative) count as all the same
 
 
 def pairwise_sq_distances(population):
@@ -116,13 +118,16 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
     def __init__(self, fitness_function, lower, upper, *,
                  pop_size=cfg.POP_SIZE, kappa=cfg.KAPPA,
                  kappa_start=cfg.KAPPA_START, refine=cfg.REFINE,
-                 archive=cfg.ARCHIVE, memory_size=cfg.MEMORY_SIZE,
+                 archive=cfg.ARCHIVE, stall=cfg.STALL,
+                 memory_size=cfg.MEMORY_SIZE,
                  minimisation=cfg.MINIMISATION, rng=None):
         """``fitness_function`` maps an ``(agents, coordinates)`` array to
         one value per agent. ``lower``/``upper``: one number or one per
         coordinate. ``kappa_start``/``kappa``: how much loudness counts at
         the start/end. ``refine``: share of evaluations for refinement.
         ``archive``: echoes kept, as a multiple of ``pop_size``.
+        ``stall``: start the group again when its best value has not
+        really improved for this share of all evaluations (0: never).
         """
         self.lower = np.atleast_1d(np.asarray(lower, dtype=float))
         self.upper = np.atleast_1d(np.asarray(upper, dtype=float))
@@ -134,6 +139,8 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             raise ValueError("pop_size must be at least 4")
         if not 0 <= refine < 1:
             raise ValueError("refine must be in [0, 1)")
+        if not 0 <= stall <= 1:
+            raise ValueError("stall must be in [0, 1]")
         self.fitness_function = fitness_function
         self.minimisation = minimisation
         self.pop_size = pop_size
@@ -141,6 +148,7 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         self.kappa_start = kappa_start
         self.refine = refine
         self.archive = archive
+        self.stall = stall
         self.memory_size = memory_size
         self.rng = rng if rng is not None else np.random.default_rng()
         self.evaluations = 0
@@ -216,18 +224,23 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         return np.where(candidate > self.upper,
                         (previous + self.upper) / 2, repaired)
 
-    def sound_phase(self, budget):
-        """Group search until ``budget`` evaluations are used."""
+    def sound_phase(self, budget, patience=None):
+        """Group search from a fresh start until ``budget`` evaluations are
+        used, or until it is stuck: every agent equally good, or no real
+        gain in the best value for ``patience`` evaluations (a real gain
+        is at least 1% of the spread of the group's values)."""
+        start = self.evaluations
         population = self.init_population()
         fitness = self._evaluate(population)
         memory = SuccessMemory(self.memory_size)
         echoes = np.empty((0, self.dim))
         capacity = int(round(self.archive * self.pop_size))
         self._record(fitness.min())
+        best, last_gain = fitness.min(), self.evaluations
 
         while self.evaluations < budget:
             # loudness counts more and more as the phase goes on
-            progress = self.evaluations / budget
+            progress = (self.evaluations - start) / (budget - start)
             kappa = self.kappa_start + (self.kappa - self.kappa_start) * progress
             step, hearing = memory.sample(self.pop_size, self.rng)
             move = self.compute_move(population, fitness, echoes, step, kappa)
@@ -251,6 +264,15 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             population[improved] = candidate[improved]
             fitness[improved] = candidate_fitness[improved]
             self._record(fitness.min())
+
+            if patience:
+                # a real gain: at least GAIN of the spread of values
+                spread = np.ptp(fitness)
+                if best - fitness.min() > GAIN * spread:
+                    best, last_gain = fitness.min(), self.evaluations
+                if (self.evaluations - last_gain >= patience
+                        or spread <= STUCK * abs(best)):
+                    break
         return population, fitness
 
     # -- refinement --------------------------------------------------
@@ -323,13 +345,21 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         self._history = []
         sound_budget = max(self.pop_size,
                            int(round(total * (1 - self.refine))))
-        population, fitness = self.sound_phase(sound_budget)
+        patience = int(self.stall * total)
 
-        best = fitness.argmin()
-        best_x, best_f = population[best].copy(), fitness[best]
+        # the group starts again whenever it gets stuck; keep the best
+        best_f = np.inf
+        while self.evaluations < sound_budget:
+            population, fitness = self.sound_phase(sound_budget, patience)
+            best = fitness.argmin()
+            if fitness[best] < best_f or best_f == np.inf:
+                best_x, best_f = population[best].copy(), fitness[best]
+                # first refinement step about as wide as that group's spread
+                spread = float(np.sqrt(np.mean(population.var(axis=0))))
+            if sound_budget - self.evaluations < 2 * self.pop_size:
+                break  # too little left for a new start
+
         if self.evaluations < total:
-            # first refinement step about as wide as the group's spread
-            spread = float(np.sqrt(np.mean(population.var(axis=0))))
             floor = 1e-8 * float(np.mean(self.upper - self.lower))
             best_x, best_f = self.refine_best(best_x, best_f,
                                               max(spread, floor), total)

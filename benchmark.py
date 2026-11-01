@@ -116,7 +116,8 @@ def one_run(task):
     search = ALGORITHMS[args.ablate](
         func, lower, upper, pop_size=args.pop, kappa=args.kappa,
         kappa_start=args.kappa_start, refine=args.refine,
-        archive=args.archive, rng=np.random.default_rng(search_seed))
+        archive=args.archive, stall=args.stall,
+        rng=np.random.default_rng(search_seed))
     return search.run(args.iterations).best_fitness
 
 
@@ -176,6 +177,7 @@ def save(args, funcs, errors):
         "evaluations": args.pop * (args.iterations + 1),
         "settings": {"kappa": args.kappa, "kappa_start": args.kappa_start,
                      "refine": args.refine, "archive": args.archive,
+                     "stall": args.stall,
                      "ablate": args.ablate},
         "errors": {str(i): row.tolist() for i, row in zip(funcs, errors)},
     }
@@ -207,6 +209,7 @@ def parse_args():
     parser.add_argument("--kappa-start", type=float, default=cfg.KAPPA_START)
     parser.add_argument("--refine", type=float, default=cfg.REFINE)
     parser.add_argument("--archive", type=float, default=cfg.ARCHIVE)
+    parser.add_argument("--stall", type=float, default=cfg.STALL)
     parser.add_argument("--ablate", default="none", choices=list(ALGORITHMS),
                         help="replace loudest-source listening")
     parser.add_argument("--save", default=None,
@@ -243,7 +246,7 @@ def main():
     print(f"suite={args.suite} runs={args.runs} pop={args.pop} "
           f"iterations={args.iterations} kappa={args.kappa} "
           f"refine={args.refine} archive={args.archive} "
-          f"ablate={args.ablate}")
+          f"stall={args.stall} ablate={args.ablate}")
     if args.suite == "cec2022":
         report_errors(args, funcs, errors)
         return

@@ -25,6 +25,9 @@ REFINE = 0.3
 # Echoes (places agents recently left) kept for random pushes, as a
 # multiple of the number of agents. 0 turns echoes off.
 ARCHIVE = 1.0
+# Start the group again (keeping the best point) when its best value has
+# not really improved for this share of all evaluations. 0: never.
+STALL = 0.1  # chosen on the moved and turned classic functions, 30 coordinates
 # Slots in the memory of what worked, and the starting step size and
 # hearing rate (chance that each coordinate takes part in a move).
 MEMORY_SIZE = 5

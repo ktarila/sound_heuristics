@@ -209,6 +209,42 @@ class TestSolution(unittest.TestCase):
             S.SoundSearch(F.f1, [0], [1], pop_size=3)
         with self.assertRaises(ValueError):
             S.SoundSearch(F.f1, [0], [1], refine=1.0)
+        with self.assertRaises(ValueError):
+            S.SoundSearch(F.f1, [0], [1], stall=-0.1)
+
+    def test_restarts_when_stuck(self):
+        class Counting(S.SoundSearch):
+            starts = 0
+
+            def init_population(self):
+                self.starts += 1
+                return super().init_population()
+
+        def flat(x):  # every agent equally good from the start
+            return np.zeros(len(np.atleast_2d(x)))
+
+        search = Counting(flat, [-1] * 3, [1] * 3, pop_size=10, stall=0.1,
+                          rng=np.random.default_rng(0))
+        result = search.run(99)
+        self.assertGreater(search.starts, 1)
+        self.assertEqual(result.evaluations, 10 * 100)
+        self.assertEqual(len(result.curve), 99)
+
+        search = Counting(flat, [-1] * 3, [1] * 3, pop_size=10, stall=0,
+                          rng=np.random.default_rng(0))
+        search.run(99)
+        self.assertEqual(search.starts, 1)
+
+    def test_restart_keeps_best(self):
+        lower, upper = -5.12 * np.ones(5), 5.12 * np.ones(5)
+        for seed in range(3):
+            search = S.SoundSearch(F.f9, lower, upper, pop_size=20,
+                                   stall=0.05, refine=0.0,
+                                   rng=np.random.default_rng(seed))
+            result = search.run(299)
+            # the result is never worse than the best seen during the run
+            self.assertEqual(result.best_fitness, result.curve[-1])
+            self.assertEqual(result.best_fitness, F.f9(result.best_x))
 
 
 if __name__ == "__main__":
