@@ -6,16 +6,22 @@
     python benchmark.py --ablate random      # listen to a random agent instead
     python benchmark.py --ablate towards     # never move away from an agent
     python benchmark.py --refine 0 --kappa 1 # switch parts off
+    python benchmark.py --suite cec2022 --dim 10 --save results/sound.json
 
-Same effort as the Grey Wolf Optimizer paper: 30 agents x 500 iterations
-(15,030 evaluations) per run, 30 runs per function.
+Classic suites: same effort as the Grey Wolf Optimizer paper, 30 agents x
+500 iterations (15,030 evaluations) per run, 30 runs per function.
+CEC 2022: the competition's effort, 200,000 evaluations per run for 10
+coordinates and 1,000,000 for 20, with 50 agents. Compare saved results
+with ``compare.py``.
 """
 import argparse
+import json
 import os
 from multiprocessing import Pool
 
 import numpy as np
 
+from sound_heuristic import cec2022
 from sound_heuristic import config as cfg
 from sound_heuristic import fitness
 from sound_heuristic.solution import SoundSearch
@@ -70,13 +76,17 @@ ALGORITHMS = {"none": SoundSearch, "random": RandomSource,
               "nearest": NearestSource, "towards": TowardsOnly}
 
 
-def transformed(index, suite):
+def transformed(index, suite, dim=10):
     """``(func, lower, upper, best value)`` of a function in a suite.
 
     "shifted" moves the best point to a fixed random place (within 60% of
     the range around the centre); "rotated" also turns the function by a
     fixed random angle, so coordinates no longer act independently.
+    "cec2022" is the CEC 2022 set with ``dim`` coordinates.
     """
+    if suite == "cec2022":
+        problem = cec2022.get_problem(index, dim)
+        return problem.func, problem.lower, problem.upper, problem.optimum
     problem = fitness.get_problem(index)
     if suite == "classic":
         return problem.func, problem.lower, problem.upper, problem.optimum
@@ -99,7 +109,7 @@ def transformed(index, suite):
 def one_run(task):
     """Best value found in one run."""
     index, run, args = task
-    func, lower, upper, _ = transformed(index, args.suite)
+    func, lower, upper, _ = transformed(index, args.suite, args.dim)
     noise_seed, search_seed = np.random.SeedSequence(
         [args.seed, index, run]).spawn(2)
     fitness.seed_noise(noise_seed)
@@ -144,15 +154,53 @@ def report_ranks(means):
     print("Sound rank per function:", table["Sound"])
 
 
+def report_errors(args, funcs, errors):
+    """Print CEC-style errors; errors below 1e-8 count as 0."""
+    errors = np.where(errors < 1e-8, 0.0, errors)
+    print(f"dim={args.dim} evaluations per run="
+          f"{args.pop * (args.iterations + 1)}")
+    print(f"{'F':>4} {'mean error':>11} {'std':>10} {'median':>11} "
+          f"{'best':>10} {'worst':>10}")
+    for index, row in zip(funcs, errors):
+        print(f"F{index:<3} {row.mean():11.4g} {row.std(ddof=1):10.3g} "
+              f"{np.median(row):11.4g} {row.min():10.3g} {row.max():10.3g}")
+
+
+def save(args, funcs, errors):
+    """Write each run's error and the settings used to a JSON file."""
+    name = args.name or ("sound" if args.ablate == "none"
+                         else f"sound-{args.ablate}")
+    record = {
+        "name": name, "suite": args.suite, "seed": args.seed,
+        "runs": args.runs, "pop": args.pop, "iterations": args.iterations,
+        "evaluations": args.pop * (args.iterations + 1),
+        "settings": {"kappa": args.kappa, "kappa_start": args.kappa_start,
+                     "refine": args.refine, "archive": args.archive,
+                     "ablate": args.ablate},
+        "errors": {str(i): row.tolist() for i, row in zip(funcs, errors)},
+    }
+    if args.suite == "cec2022":
+        record["dim"] = args.dim
+    directory = os.path.dirname(args.save)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(args.save, "w", encoding="utf-8") as handle:
+        json.dump(record, handle, indent=1)
+
+
 def parse_args():
     """Read program arguments."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--suite", default="classic",
-                        choices=["classic", "shifted", "rotated"])
+                        choices=["classic", "shifted", "rotated", "cec2022"])
+    parser.add_argument("--dim", type=int, default=10, choices=cec2022.DIMS,
+                        help="coordinates, for cec2022 only")
     parser.add_argument("--funcs", type=int, nargs="+", default=None)
     parser.add_argument("--runs", type=int, default=30)
-    parser.add_argument("--iterations", type=int, default=500)
-    parser.add_argument("--pop", type=int, default=30)
+    parser.add_argument("--iterations", type=int, default=None,
+                        help="default: 500, or the CEC 2022 budget")
+    parser.add_argument("--pop", type=int, default=None,
+                        help="default: 30, or 50 for cec2022")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
     parser.add_argument("--kappa", type=float, default=cfg.KAPPA)
@@ -161,23 +209,44 @@ def parse_args():
     parser.add_argument("--archive", type=float, default=cfg.ARCHIVE)
     parser.add_argument("--ablate", default="none", choices=list(ALGORITHMS),
                         help="replace loudest-source listening")
-    return parser.parse_args()
+    parser.add_argument("--save", default=None,
+                        help="write every run's error to this JSON file")
+    parser.add_argument("--name", default=None,
+                        help="name for the saved results (for compare.py)")
+    args = parser.parse_args()
+    cec = args.suite == "cec2022"
+    if args.pop is None:
+        args.pop = 50 if cec else 30
+    if args.iterations is None:
+        args.iterations = (cec2022.BUDGET[args.dim] // args.pop - 1 if cec
+                           else 500)
+    return args
 
 
 def main():
     """Run every function in the suite and print a summary."""
     args = parse_args()
-    funcs = args.funcs or (list(range(1, 24)) if args.suite == "classic"
-                           else TRANSFORMABLE)
+    default_funcs = {"classic": list(range(1, 24)),
+                     "cec2022": list(range(1, 13))}
+    funcs = args.funcs or default_funcs.get(args.suite, TRANSFORMABLE)
     tasks = [(i, run, args) for i in funcs for run in range(args.runs)]
     with Pool(args.jobs) as pool:
         values = np.array(pool.map(one_run, tasks, chunksize=1))
     values = values.reshape(len(funcs), args.runs)
 
+    optima = np.array([transformed(i, args.suite, args.dim)[3]
+                       for i in funcs])
+    errors = np.abs(values - optima[:, None])
+    if args.save:
+        save(args, funcs, errors)
+
     print(f"suite={args.suite} runs={args.runs} pop={args.pop} "
           f"iterations={args.iterations} kappa={args.kappa} "
           f"refine={args.refine} archive={args.archive} "
           f"ablate={args.ablate}")
+    if args.suite == "cec2022":
+        report_errors(args, funcs, errors)
+        return
     print(f"{'f':>4} {'mean':>11} {'std':>10} {'median':>11} "
           f"{'log10 err':>9}")
     log_errors = []

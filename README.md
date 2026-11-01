@@ -115,8 +115,19 @@ python entry.py -i 9 -n 500 --pop 30 --seed 0
 python entry.py -i 5 --kappa 8 --refine 0.2  # change settings
 python entry.py --tune 5 9 10 12 -n 500 --samples 40 --runs 5 --seed 0
 python benchmark.py                          # reproduce the results below
+python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_sound.json
+python compare.py results/cec2022_D10_*.json --control sound
 python -m unittest discover tests
 ```
+
+`compare.py` runs the statistical tests in `sound_heuristic/stats.py` on
+saved results: the Wilcoxon rank-sum test on each function, and the
+Friedman test with Holm's correction across functions, as recommended by
+Demšar (2006) and Derrac et al. (2011). The CEC 2022 functions are in `sound_heuristic/cec2022.py`;
+their data files are downloaded from the organisers' GitHub the first time
+they are used (into `cec2022_data/`, or the folder named by the
+`CEC2022_DATA` environment variable). They are not stored in this
+repository because the organisers' repository has no license.
 
 `-i` selects one of the 23 test functions in `sound_heuristic/fitness.py`.
 Each run reports the mean, standard deviation, median, best and worst
@@ -266,6 +277,50 @@ Run with `python benchmark.py --ablate random` (or `nearest`, `towards`),
 `--kappa 1`, `--archive 0` or `--refine 0`, adding `--suite shifted` or
 `--suite rotated`.
 
+### CEC 2022 functions
+
+The settings above were chosen on the classic functions. The 12 CEC 2022
+competition functions (Kumar et al., 2021) were not used for that, so
+they give a fairer test. All of them are moved and turned, and F6–F12
+mix several functions together. Each run has 10 coordinates and 200,000
+evaluations (the competition rules), with 50 agents and 30 runs. The
+table gives the mean error (distance above the best possible value;
+errors below 10⁻⁸ count as 0). +, − and = say whether the full method is
+significantly better, worse or no different from each variant on that
+function (Wilcoxon rank-sum test, 5% level).
+
+| F | function | all parts | random agent | nearest agent | never move away |
+|---|---|---|---|---|---|
+| 1 | Zakharov | 0 | 0 = | 0 = | 0 = |
+| 2 | Rosenbrock | 2.82 | 4.68 + | 1.86 = | 2.95 = |
+| 3 | Schaffer F7 | 0 | 0 = | 0 = | 0 = |
+| 4 | Rastrigin | 6.43 | 6.60 = | 10.5 + | 6.67 = |
+| 5 | Levy | 0 | 0 = | 0.142 = | 0 = |
+| 6 | mix of 3 | 0.108 | 0.213 + | 0.0978 = | 0.115 = |
+| 7 | mix of 6 | 0.176 | 0.538 + | 0.747 + | 0.124 = |
+| 8 | mix of 5 | 8.32 | 8.05 = | 10.9 = | 4.75 − |
+| 9 | blend of 5 | 229 | 229 = | 229 = | 229 = |
+| 10 | blend of 4 | 104 | 104 = | 10.9 − | 104 = |
+| 11 | blend of 5 | 0 | 5.01 = | 0 = | 0 = |
+| 12 | blend of 6 | 161 | 161 = | 160 = | 162 + |
+| | **better / worse / same** | | 3 / 0 / 9 | 2 / 1 / 9 | 1 / 1 / 10 |
+| | **Friedman average rank** | **2.29** | 2.88 | 2.46 | 2.38 |
+
+Four functions are solved in every run (F1, F3, F5, F11). On F9 every run
+ends at the same value, 229.3.
+
+Here the variants are much harder to tell apart than on the classic
+functions. Listening to the loudest agent is better than listening to a
+random one on 3 functions and never worse. Against the nearest agent it
+is better on 2 and worse on 1 (F10, where the nearest-agent version
+escapes a trap that the others fall into). The Friedman test finds no
+overall difference between the four (p = 0.55; Holm's adjusted p-values
+are all above 0.8). With only 12 functions it can detect only large
+differences.
+
+These results show how the parts compare, not how good the method is: it
+has not yet been compared with strong methods on these functions.
+
 ### Strengths and weaknesses
 
 **Strengths:** the low-dimensional functions with several valleys (f14–f23:
@@ -280,10 +335,13 @@ and the noisy quartic (f7), which is worse than in version 1.
 
 ### Caveats
 
-- The settings were chosen by comparing variants on these same functions
-  (plain, moved and turned), so the results are somewhat optimistic.
-  A fair test would use different functions, such as the CEC 2017
-  (Awad et al., 2016) or CEC 2022 (Kumar et al., 2021) competition sets.
+- The settings were chosen by comparing variants on the classic functions
+  (plain, moved and turned), so those results are somewhat optimistic.
+  The CEC 2022 results are free of this, but so far only at 10
+  coordinates. The CEC 2017 set (Awad et al., 2016) would be another
+  independent test.
+- The CEC 2022 code is checked at each function's best point, but has
+  not yet been compared value for value with the organisers' code.
 - GWO, PSO and GSA are classic methods, not the strongest current ones.
   Their numbers come from a paper, not from runs with the same seeds.
 - Several parts are borrowed from existing methods (cited above): the
@@ -332,6 +390,14 @@ f4, f10, f12 and f13).
   numerical optimization.* Technical report, Nanyang Technological
   University, Singapore; Jordan University of Science and Technology;
   Zhengzhou University.
+- Demšar, J. (2006). Statistical comparisons of classifiers over multiple
+  data sets. *Journal of Machine Learning Research*, 7, 1–30.
+  [jmlr.org/papers/v7/demsar06a.html](https://www.jmlr.org/papers/v7/demsar06a.html)
+- Derrac, J., García, S., Molina, D. & Herrera, F. (2011). A practical
+  tutorial on the use of nonparametric statistical tests as a methodology
+  for comparing evolutionary and swarm intelligence algorithms. *Swarm and
+  Evolutionary Computation*, 1(1), 3–18.
+  [doi:10.1016/j.swevo.2011.02.002](https://doi.org/10.1016/j.swevo.2011.02.002)
 - Igel, C., Suttorp, T. & Hansen, N. (2006). A computational efficient
   covariance matrix update and a (1+1)-CMA for evolution strategies.
   *Proceedings of the 8th Annual Conference on Genetic and Evolutionary

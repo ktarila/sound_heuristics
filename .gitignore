@@ -33,3 +33,6 @@ tags
 *.csv
 *.dat
 *.db
+
+# CEC 2022 data (downloaded on first use; no license to redistribute)
+cec2022_data/
