@@ -1,4 +1,4 @@
-"""Default settings. Nothing here is mutated at run time."""
+"""Default settings. Nothing here changes while running."""
 
 
 NAME = """
@@ -12,21 +12,23 @@ ITERATIONS = 1000
 POP_SIZE = 50
 RUNS = 30
 
-# Defaults tuned with ``entry.py --tune``-style random search on f5, f9,
-# f10, f12 (30 agents x 500 iterations). Re-tune after any change to the
-# update rule.
+# Defaults picked by comparing settings on the benchmark functions (see
+# README). Check them again after changing how agents move.
 
-# Step size towards / away from the selected neighbour, in percent of
-# the distance between the two agents.
-RHO = 16.0
-# Upper bound of the random fraction of last step carried forward.
-MOMENTUM = 0.27
-# Initial scale of random exploration, as a fraction of the domain width.
-# Decays to 0 over the run.
-EXPLORATION = 0.055
-# Strength of the attraction to the global best; grows with progress^2.
-PULL = 2.9
-# Probability that an agent receives an exploration kick in an iteration.
-EXPLORATION_PROB = 0.5
+# How much loudness counts compared with distance (kappa in
+# I = P^kappa / (4 pi r^2)); rises from KAPPA_START to KAPPA during the run.
+KAPPA_START = 1.0
+KAPPA = 4.0
+# Share of all evaluations used at the end for the best agent to refine
+# its point alone.
+REFINE = 0.3
+# Echoes (places agents recently left) kept for random pushes, as a
+# multiple of the number of agents. 0 turns echoes off.
+ARCHIVE = 1.0
+# Slots in the memory of what worked, and the starting step size and
+# hearing rate (chance that each coordinate takes part in a move).
+MEMORY_SIZE = 5
+STEP_INIT = 0.5
+HEARING_INIT = 0.5
 
 SEED = None

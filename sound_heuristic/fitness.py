@@ -1,20 +1,19 @@
-"""Benchmark fitness functions f1 - f23 (Yao et al. 1999 / Mirjalili suite).
+"""Test functions f1 - f23 (Yao et al. 1999, as used by Mirjalili).
 
-Every function is vectorised over the last axis: ``x`` may be a single
-agent of shape ``(dim,)`` (returns a scalar) or a population of shape
-``(n, dim)`` (returns an array of shape ``(n,)``).
+Each takes one point ``(dim,)`` and returns a number, or many points
+``(n, dim)`` and returns ``n`` numbers.
 """
 from collections import namedtuple
 
 import numpy as np
 
-# Generator for the noise term of f7. Reseed with ``seed_noise`` for
-# reproducible experiments.
+# Random numbers for f7's noise; fix them with ``seed_noise`` to repeat
+# an experiment exactly.
 _NOISE_RNG = np.random.default_rng()
 
 
 def seed_noise(seed):
-    """Reseed the random generator used by noisy functions (f7)."""
+    """Fix the random noise of f7 so results can be repeated."""
     global _NOISE_RNG  # pylint: disable=global-statement
     _NOISE_RNG = np.random.default_rng(seed)
 
@@ -55,21 +54,18 @@ def f5(x):
 
 
 def f6(x):
-    """Step function, Mirjalili variant: sum (x_i + 0.5)^2.
+    """Step function as in Mirjalili's code: sum (x_i + 0.5)^2.
 
-    Yao et al. define it with a floor, sum floor(x_i + 0.5)^2. This
-    implementation follows Mirjalili's reference code (no floor); state
-    this when comparing against published results.
+    Yao et al. round down, sum floor(x_i + 0.5)^2; say which version
+    you use when comparing with published results.
     """
     x = np.asarray(x)
     return np.sum((x + 0.5) ** 2, axis=-1)
 
 
 def f7(x):
-    """Quartic with noise: sum i * x_i^4 + U[0, 1).
-
-    The noise is drawn fresh on every evaluation.
-    """
+    """Quartic with noise: sum i * x_i^4 + a random number in [0, 1),
+    new on every call."""
     x = np.asarray(x)
     ind = np.arange(1, x.shape[-1] + 1)
     return np.sum(ind * x ** 4, axis=-1) + _NOISE_RNG.random(x.shape[:-1])
@@ -117,7 +113,7 @@ def u_sum(x, a, k, m):
 
 
 def f12(x):
-    """Generalised penalised function 1."""
+    """Penalised function 1 (best point: every x_i = -1)."""
     x = np.asarray(x)
     n = x.shape[-1]
     y = 1 + (x + 1) / 4
@@ -129,7 +125,7 @@ def f12(x):
 
 
 def f13(x):
-    """Generalised penalised function 2."""
+    """Penalised function 2 (best point: every x_i = 1)."""
     x = np.asarray(x)
     first = np.sin(3 * np.pi * x[..., 0]) ** 2
     middle = np.sum((x[..., :-1] - 1) ** 2
@@ -148,7 +144,7 @@ def f14(x):
     """Shekel's foxholes, dim = 2."""
     x = np.asarray(x)
     _check_dim(x, 2, "f14")
-    # (..., 2, 25)
+    # distance to each of the 25 holes, per coordinate
     bottom = np.sum((x[..., :, None] - _F14_A) ** 6, axis=-2)
     j = np.arange(1, _F14_A.shape[1] + 1)
     return 1 / (1 / 500 + np.sum(1 / (j + bottom), axis=-1))
@@ -276,8 +272,8 @@ def f23(x):
 Problem = namedtuple("Problem", "index func lower upper optimum")
 
 
-# index: (lower, upper, dim, func, known optimum)
-# lower/upper may be scalars or per-dimension lists.
+# index: (lower limit, upper limit, coordinates, function, best value)
+# limits are one number for all coordinates or one per coordinate
 _BENCHMARKS = {
     1: (-100, 100, 30, f1, 0.0),
     2: (-10, 10, 30, f2, 0.0),
@@ -306,10 +302,7 @@ _BENCHMARKS = {
 
 
 def get_problem(index):
-    """Return the benchmark ``Problem`` for index 1 - 23.
-
-    ``lower`` and ``upper`` are always arrays of shape ``(dim,)``.
-    """
+    """Test function ``index`` (1 - 23), with one limit per coordinate."""
     if index not in _BENCHMARKS:
         raise ValueError("Function index should be between 1 and 23")
     lower, upper, dim, func, optimum = _BENCHMARKS[index]
