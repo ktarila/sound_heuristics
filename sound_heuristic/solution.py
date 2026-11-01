@@ -1,233 +1,196 @@
-"""Evaluation function for minimisation function"""
+"""Sound intensity heuristic search.
 
-from math import exp
+Each agent emits sound with a power proportional to its (normalised)
+fitness. The intensity agent ``i`` hears from agent ``j`` is
+
+    I_ij = P_j / (4 pi r_ij^2)
+
+Every agent picks the source it hears loudest and moves towards it if
+that source is fitter, away from it otherwise. Added to that are
+momentum, a random exploration term that decays over the run, and a pull
+towards the global best that grows over the run. All random coefficients
+are drawn per dimension. A move is kept only if it improves the agent
+(greedy acceptance), so the population never loses its best solution.
+"""
+from collections import namedtuple
+
 import numpy as np
-from sklearn.metrics.pairwise import euclidean_distances
 
 from sound_heuristic import config as cfg
 
+Result = namedtuple("Result", "best_x best_fitness evaluations curve")
 
-def init_population(dim=2, size=50, search_space=None):
-    """Create an initial population for a function"""
-    pop = None
-    if search_space is None:
-        search_space = np.atleast_2d(np.array([-100, 100]))
-        # search_space = np.array([[-5, 10], [0, 15]])
-        # print(search_space.shape)
+
+def pairwise_sq_distances(population):
+    """Squared Euclidean distance between every pair of agents.
+
+    Uses explicit differences (not the |a|^2 + |b|^2 - 2ab identity) so
+    identical agents get exactly 0.
+    """
+    diff = population[:, None, :] - population[None, :, :]
+    return np.einsum("ijk,ijk->ij", diff, diff)
+
+
+def normalised_power(fitness):
+    """Map fitness (minimisation) to power in [0, 1], summing to 1.
+
+    Best agent gets the largest power, worst agent gets 0. If all agents
+    are equally fit, every agent gets the same power.
+    """
+    best, worst = np.min(fitness), np.max(fitness)
+    spread = worst - best
+    if spread <= 0 or not np.isfinite(spread):
+        small_p = np.ones_like(fitness, dtype=float)
     else:
-        search_space = np.atleast_2d(np.array(search_space))
-        if search_space.shape[0] == 1:
-            pop = np.random.default_rng().uniform(
-                search_space[0][0], search_space[0][1], [size, dim])
-        if search_space.shape[0] == 2:
-            # stack by columns because range depends on axis
-            pop = np.stack(
-                [np.random.uniform(
-                    search_space[0][i],
-                    search_space[1][i], size) for i in range(dim)], axis=1)
-    cfg.HISTORY = np.zeros(pop.shape)
-    return pop
+        small_p = (worst - fitness) / spread
+    return small_p / np.sum(small_p)
 
 
-def compute_intensity(population, fitness_function, minimisation=True):
-    """Compute the intensity of a population
-       Given the power (determined from the fitness)
-       of an agent
+def compute_intensity(population, fitness):
+    """Intensity matrix: row i holds what agent i hears from every j."""
+    sq_dist = pairwise_sq_distances(population)
+    area = 4 * np.pi * sq_dist
+    inv_area = np.divide(1.0, area, out=np.zeros_like(area), where=area > 0)
+    # power belongs to the source j -> scale columns
+    return inv_area * normalised_power(fitness)[None, :]
+
+
+class SoundSearch:  # pylint: disable=too-many-instance-attributes
+    """Sound intensity optimiser over a box-constrained domain."""
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, fitness_function, lower, upper, *,
+                 pop_size=cfg.POP_SIZE, rho=cfg.RHO, momentum=cfg.MOMENTUM,
+                 exploration=cfg.EXPLORATION,
+                 exploration_prob=cfg.EXPLORATION_PROB, pull=cfg.PULL,
+                 minimisation=cfg.MINIMISATION, rng=None):
+        """``fitness_function`` must accept a population ``(n, dim)``
+        and return ``(n,)`` values. ``lower``/``upper`` are scalars or
+        per-dimension arrays.
+        """
+        self.lower = np.atleast_1d(np.asarray(lower, dtype=float))
+        self.upper = np.atleast_1d(np.asarray(upper, dtype=float))
+        if self.lower.shape != self.upper.shape:
+            raise ValueError("lower and upper must have the same shape")
+        if np.any(self.lower >= self.upper):
+            raise ValueError("every lower bound must be below its upper bound")
+        self.fitness_function = fitness_function
+        self.minimisation = minimisation
+        self.pop_size = pop_size
+        self.rho = rho
+        self.momentum = momentum
+        self.exploration = exploration
+        self.exploration_prob = exploration_prob
+        self.pull = pull
+        self.rng = rng if rng is not None else np.random.default_rng()
+        self.evaluations = 0
+
+    @property
+    def dim(self):
+        """Problem dimension."""
+        return self.lower.size
+
+    def _evaluate(self, population):
+        """Evaluate a population, internally always as minimisation."""
+        self.evaluations += len(population)
+        values = np.asarray(self.fitness_function(population), dtype=float)
+        return values if self.minimisation else -values
+
+    def init_population(self):
+        """Uniform random population inside the bounds."""
+        return self.rng.uniform(self.lower, self.upper,
+                                (self.pop_size, self.dim))
+
+    def compute_step(self, population, fitness):
+        """Move towards the loudest source if it is fitter, else away.
+
+        The random factor is drawn per dimension, so moves are not
+        restricted to the line between agent and neighbour.
+        """
+        intensity = compute_intensity(population, fitness)
+        neighbours = intensity.argmax(axis=1)
+        direction = np.where(fitness[neighbours] < fitness, 1.0, -1.0)
+        scale = self.rho / 100 * (1 + self.rng.random(population.shape))
+        return direction[:, None] * scale * (
+            population[neighbours] - population)
+
+    def compute_pull(self, population, best_x, progress):
+        """Attraction to the global best, growing with progress^2."""
+        return (self.pull * progress ** 2
+                * self.rng.random(population.shape) * (best_x - population))
+
+    def compute_exploration(self, progress):
+        """Gaussian kick for a random subset of agents, decaying to 0."""
+        sigma = self.exploration * (1 - progress) ** 3 * (
+            self.upper - self.lower)
+        kick = self.rng.normal(0, 1, (self.pop_size, self.dim)) * sigma
+        chosen = self.rng.random((self.pop_size, 1)) < self.exploration_prob
+        return kick * chosen
+
+    def fix_boundary(self, candidate, previous, velocity):
+        """Repair out-of-bounds coordinates of ``candidate``.
+
+        A coordinate that crossed a bound is placed halfway between its
+        previous value and that bound (as in L-SHADE), which keeps the
+        agent's progress instead of resetting it. Momentum is cleared for
+        repaired coordinates.
+        """
+        below = candidate < self.lower
+        above = candidate > self.upper
+        repaired = np.where(below, (previous + self.lower) / 2, candidate)
+        repaired = np.where(above, (previous + self.upper) / 2, repaired)
+        velocity = np.where(below | above, 0.0, velocity)
+        return repaired, velocity
+
+    def run(self, iterations=cfg.ITERATIONS):
+        """Run the search and return a ``Result``.
+
+        ``evaluations`` counts fitness evaluations (pop_size per
+        iteration, plus the initial population). ``curve`` holds the best
+        fitness after each iteration.
+        """
+        self.evaluations = 0
+        population = self.init_population()
+        velocity = np.zeros_like(population)
+        fitness = self._evaluate(population)
+        best_idx = np.argmin(fitness)
+        best_x, best_f = population[best_idx].copy(), fitness[best_idx]
+        curve = np.empty(iterations)
+
+        for iteration in range(iterations):
+            progress = iteration / iterations
+            step = self.compute_step(population, fitness)
+            step += self.compute_exploration(progress)
+            step += self.compute_pull(population, best_x, progress)
+            carry = self.rng.uniform(0, self.momentum, (self.pop_size, 1))
+            new_velocity = carry * velocity + step
+            candidate, new_velocity = self.fix_boundary(
+                population + new_velocity, population, new_velocity)
+            candidate_fitness = self._evaluate(candidate)
+
+            # greedy acceptance: keep a move only if it improves the agent
+            improved = candidate_fitness < fitness
+            population[improved] = candidate[improved]
+            fitness[improved] = candidate_fitness[improved]
+            velocity = np.where(improved[:, None], new_velocity, 0.0)
+
+            best_idx = np.argmin(fitness)
+            if fitness[best_idx] < best_f:
+                best_x, best_f = population[best_idx].copy(), fitness[best_idx]
+            curve[iteration] = best_f
+
+        sign = 1 if self.minimisation else -1
+        return Result(best_x, sign * best_f, self.evaluations, sign * curve)
+
+
+def sample_parameters(rng, size):
+    """Random candidates for tuning.
+
+    Columns: rho, momentum, exploration, pull.
     """
-    # Distance between pair of agents
-    distance = euclidean_distances(population, population)
-    area = 4 * np.pi * np.power(distance, 2)
-    # compute 1/area^2
-    area_reciprocal = np.power(np.reciprocal(
-        area, out=np.zeros_like(area), where=area != 0), 2)
-    # Transform big_power to column vector for multiplication
-    power_big = big_power(fitness_function, population, minimisation)
-    # print(power_big.shape)
-    # for row multiplication
-    big_pow_col = np.atleast_2d(power_big).transpose()
-    # print(big_pow_col.shape)
-    return area_reciprocal * big_pow_col
-
-
-def compute_change(intensity,
-                   population, fitness_function, minimisation, iteration):
-    """Convert intensity to range 0,1 probabilites"""
-    # print("***intensity**")
-    # print(intensity)
-    # print("***Cumsum***")
-    row_total = np.sum(intensity, axis=1)
-    # print(row_total)
-    row_total = np.atleast_2d(row_total).transpose()
-    # Hold cumulative sums
-    cum_total = np.cumsum((intensity / row_total), axis=1)
-    # Generate a set of uniformly distributed samples...
-    uniform_rand = np.random.rand(len(cum_total), 1)
-    # Get index
-    neighbours = population[(uniform_rand < cum_total).argmax(axis=1)]
-
-    # maximum based on highest intensity --- no probability
-    neighbours = population[intensity.argmax(axis=1)]
-
-    # Get population array
-    pop_fit = compute_fitness(fitness_function, population)
-    neighbour_fitness = compute_fitness(fitness_function, neighbours)
-    percentage = np.zeros(pop_fit.shape)
-    if minimisation:
-        percentage = (neighbour_fitness / np.maximum(
-            pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
-    else:
-        percentage = (pop_fit / np.maximum(
-            pop_fit, neighbour_fitness)) + np.random.uniform(0, 1)
-    # percentage = np.atleast_2d(percentage).transpose() * decay(iteration)
-    percentage = np.atleast_2d(percentage).transpose() * cfg.RHO
-    diff = (population - neighbours) * percentage / 100
-    # rand_num = np.random.default_rng().uniform(
-    #     0, 1, [population.shape[0], 1])
-    # diff = (population - neighbours) * rand_num
-    return diff
-
-
-def compute_fitness(fitness_function, population):
-    """Compute the fitness of a population
-       Input is the fintess function and population
-    """
-    return np.apply_along_axis(fitness_function, 1, population)
-
-
-def get_best(fitness_array, minimisation=True):
-    """Get the best result,
-       if minimisation best is smallest value
-       if not minimisation best is largest value
-    """
-    return np.amin(fitness_array) if minimisation else np.amax(fitness_array)
-
-
-def get_best_index(fitness_array, minimisation=True):
-    """Get the best result,
-       if minimisation best is smallest value
-       if not minimisation best is largest value
-    """
-    if minimisation:
-        return np.unravel_index(
-            np.argmin(fitness_array, axis=None), fitness_array.shape)
-    return np.unravel_index(
-        np.argmax(fitness_array, axis=None), fitness_array.shape)
-
-
-def get_worst(fitness_array, minimisation=True):
-    """Get the best result,
-       if minimisation best is smallest value
-       if not minimisation best is largest value
-    """
-    return np.amax(fitness_array) if minimisation else np.amin(fitness_array)
-
-
-def get_worst_index(fitness_array, minimisation=True):
-    """Get the best result,
-       if minimisation best is smallest value
-       if not minimisation best is largest value
-    """
-    if minimisation:
-        return np.unravel_index(
-            np.argmax(fitness_array, axis=None), fitness_array.shape)
-    return np.unravel_index(
-        np.argmin(fitness_array, axis=None), fitness_array.shape)
-
-
-def small_power(fitness_function, population, minimisation=True):
-    """Calculate small p of a population"""
-    fitness_array = compute_fitness(fitness_function, population)
-    best = get_best(fitness_array, minimisation)
-    worst = get_worst(fitness_array, minimisation)
-    small_p = (fitness_array - worst) / best - worst
-
-    return small_p
-
-
-def big_power(fitness_function, population, minimisation=True):
-    """Calculate the nomalized Power (fitness of agents in population)"""
-    small_p = small_power(fitness_function, population, minimisation)
-    total = np.sum(small_p)
-    # print("********small_p**********")
-    # print(small_p)
-    # print("******big_p**********")
-    # print(small_p / total)
-    return small_p / total
-
-
-def movement(population, intensity, power):
-    """Calculate movement of agents in population
-       Which is a fraction of calling agent (based on the intensity)
-       divided by the power of agent
-    """
-    total_intensity = np.atleast_2d(np.sum(intensity, axis=1)).transpose()
-    fraction = population * total_intensity
-    total = np.sum(fraction, axis=0)
-    # reshape to add repeat total
-    total = np.reshape(total, (1, total.size))
-    # repeat rows x times
-    displacement = np.repeat(total, population.shape[0], axis=0)
-    return displacement * np.atleast_2d(power).transpose()
-
-
-def compare_fitness(first, second, fitness_function, minimisation=True):
-    """Compare the fitness values of two agents"""
-    first_fitness = fitness_function(first)
-    second_fitness = fitness_function(second)
-    if minimisation:
-        return first if first_fitness < second_fitness else second
-    return first if first_fitness > second_fitness else second
-
-
-def decay(iteration):
-    """ decay to 37% of previous value at
-        every 100 intervals. Initial value at iteration = 0 is rho
-    """
-    return cfg.RHO * exp(-1 * iteration / 600)
-
-
-def fix_boundary(population):
-    """Adjust population to be in boundary"""
-    next_pop = np.copy(population)
-    search_space = np.atleast_2d(np.array(cfg.DOMAIN))
-    if search_space.shape[0] == 1:
-        # keep next pop in range
-        # all greater than is upper limit minus random value
-        next_pop[
-            next_pop > search_space[0][1]
-        ] = search_space[0][1] - np.random.uniform(0, search_space[0][1])
-        # next_pop[next_pop > cfg.DOMAIN[1]] = cfg.DOMAIN[
-        #     1] - np.random.uniform(0, 1)
-        # all less is lowwer limit plus random value
-        next_pop[
-            next_pop < search_space[0][0]
-        ] = search_space[0][0] + np.random.uniform(0, search_space[0][1])
-        # next_pop[next_pop < cfg.DOMAIN[0]] = cfg.DOMAIN[
-        #     0] + np.random.uniform(0, 1)
-    if search_space.shape[0] == 2:
-        # update first axis(0)
-        next_pop[:, 0][
-            next_pop[:, 0] < search_space[0][0]
-        ] = search_space[0][0] + np.random.uniform(0, search_space[1][0])
-        next_pop[:, 0][
-            next_pop[:, 0] > search_space[1][0]
-        ] = search_space[1][0] - np.random.uniform(0, search_space[1][0])
-
-        # update second axis
-        next_pop[:, 1][
-            next_pop[:, 1] < search_space[0][1]
-        ] = search_space[0][1] + np.random.uniform(0, search_space[1][1])
-        next_pop[:, 0][
-            next_pop[:, 1] > search_space[1][1]
-        ] = search_space[1][1] - np.random.uniform(0, search_space[1][1])
-    return next_pop
-
-
-def parameter_combinations():
-    """get possible variables"""
-    rho = np.linspace(10, 95, 30)
-    momentum = np.linspace(0, 1, 30)
-    # cartesian product to get all combinations
-    cart = np.transpose(
-        [np.tile(rho, len(momentum)), np.repeat(momentum, len(rho))])
-    return cart
+    return np.column_stack([
+        rng.uniform(5, 95, size),
+        rng.uniform(0, 1, size),
+        10 ** rng.uniform(-2, -0.5, size),
+        10 ** rng.uniform(-0.5, 0.7, size),
+    ])
