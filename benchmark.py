@@ -7,12 +7,15 @@
     python benchmark.py --ablate towards     # never move away from an agent
     python benchmark.py --refine 0 --kappa 1 # switch parts off
     python benchmark.py --suite cec2022 --dim 10 --save results/sound.json
+    python benchmark.py --suite cec2017 --dim 10 --runs 10
 
 Classic suites: same effort as the Grey Wolf Optimizer paper, 30 agents x
 500 iterations (15,030 evaluations) per run, 30 runs per function.
 CEC 2022: the competition's effort, 200,000 evaluations per run for 10
-coordinates and 1,000,000 for 20, with 50 agents. Compare saved results
-with ``compare.py``.
+coordinates and 1,000,000 for 20, with 50 agents. CEC 2017 (used to
+choose settings, so that CEC 2022 stays a fair test): 10,000 evaluations
+per coordinate, with 50 agents. Compare saved results with
+``compare.py``.
 """
 import argparse
 import json
@@ -21,7 +24,7 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from sound_heuristic import cec2022
+from sound_heuristic import cec2017, cec2022
 from sound_heuristic import config as cfg
 from sound_heuristic import fitness
 from sound_heuristic.solution import SoundSearch
@@ -72,6 +75,7 @@ class TowardsOnly(SoundSearch):
         return np.ones(len(fitness))
 
 
+CEC = {"cec2022": cec2022, "cec2017": cec2017}
 ALGORITHMS = {"none": SoundSearch, "random": RandomSource,
               "nearest": NearestSource, "towards": TowardsOnly}
 
@@ -82,10 +86,10 @@ def transformed(index, suite, dim=10):
     "shifted" moves the best point to a fixed random place (within 60% of
     the range around the centre); "rotated" also turns the function by a
     fixed random angle, so coordinates no longer act independently.
-    "cec2022" is the CEC 2022 set with ``dim`` coordinates.
+    "cec2022" and "cec2017" are those sets with ``dim`` coordinates.
     """
-    if suite == "cec2022":
-        problem = cec2022.get_problem(index, dim)
+    if suite in CEC:
+        problem = CEC[suite].get_problem(index, dim)
         return problem.func, problem.lower, problem.upper, problem.optimum
     problem = fitness.get_problem(index)
     if suite == "classic":
@@ -181,7 +185,7 @@ def save(args, funcs, errors):
                      "ablate": args.ablate},
         "errors": {str(i): row.tolist() for i, row in zip(funcs, errors)},
     }
-    if args.suite == "cec2022":
+    if args.suite in CEC:
         record["dim"] = args.dim
     directory = os.path.dirname(args.save)
     if directory:
@@ -194,15 +198,17 @@ def parse_args():
     """Read program arguments."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--suite", default="classic",
-                        choices=["classic", "shifted", "rotated", "cec2022"])
-    parser.add_argument("--dim", type=int, default=10, choices=cec2022.DIMS,
-                        help="coordinates, for cec2022 only")
+                        choices=["classic", "shifted", "rotated", "cec2022",
+                                 "cec2017"])
+    parser.add_argument("--dim", type=int, default=10,
+                        help="coordinates, for cec2022 (10, 20) and cec2017 "
+                             "(10, 30, 50, 100) only")
     parser.add_argument("--funcs", type=int, nargs="+", default=None)
     parser.add_argument("--runs", type=int, default=30)
     parser.add_argument("--iterations", type=int, default=None,
-                        help="default: 500, or the CEC 2022 budget")
+                        help="default: 500, or the CEC budget")
     parser.add_argument("--pop", type=int, default=None,
-                        help="default: 30, or 50 for cec2022")
+                        help="default: 30, or 50 for the CEC sets")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
     parser.add_argument("--kappa", type=float, default=cfg.KAPPA)
@@ -217,12 +223,17 @@ def parse_args():
     parser.add_argument("--name", default=None,
                         help="name for the saved results (for compare.py)")
     args = parser.parse_args()
-    cec = args.suite == "cec2022"
+    cec = args.suite in CEC
+    if cec and args.dim not in CEC[args.suite].DIMS:
+        parser.error(f"--dim must be one of {CEC[args.suite].DIMS}")
     if args.pop is None:
         args.pop = 50 if cec else 30
     if args.iterations is None:
-        args.iterations = (cec2022.BUDGET[args.dim] // args.pop - 1 if cec
-                           else 500)
+        args.iterations = 500
+        if args.suite == "cec2022":
+            args.iterations = cec2022.BUDGET[args.dim] // args.pop - 1
+        elif args.suite == "cec2017":
+            args.iterations = cec2017.budget(args.dim) // args.pop - 1
     return args
 
 
@@ -230,7 +241,8 @@ def main():
     """Run every function in the suite and print a summary."""
     args = parse_args()
     default_funcs = {"classic": list(range(1, 24)),
-                     "cec2022": list(range(1, 13))}
+                     "cec2022": list(range(1, 13)),
+                     "cec2017": list(cec2017.FUNCS)}
     funcs = args.funcs or default_funcs.get(args.suite, TRANSFORMABLE)
     tasks = [(i, run, args) for i in funcs for run in range(args.runs)]
     with Pool(args.jobs) as pool:
@@ -247,7 +259,7 @@ def main():
           f"iterations={args.iterations} kappa={args.kappa} "
           f"refine={args.refine} archive={args.archive} "
           f"stall={args.stall} ablate={args.ablate}")
-    if args.suite == "cec2022":
+    if args.suite in CEC:
         report_errors(args, funcs, errors)
         return
     print(f"{'f':>4} {'mean':>11} {'std':>10} {'median':>11} "

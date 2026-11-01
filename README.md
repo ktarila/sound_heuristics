@@ -131,6 +131,7 @@ python entry.py -i 5 --kappa 8 --refine 0.2  # change settings
 python entry.py --tune 5 9 10 12 -n 500 --samples 40 --runs 5 --seed 0
 python benchmark.py                          # reproduce the results below
 python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_sound.json
+python benchmark.py --suite cec2017 --dim 10 --runs 10   # design set
 python compare.py results/cec2022_D10_*.json --control sound
 python compare.py results/cec2022_D10_sound.json --published  # vs CEC 2022 entries
 python -m unittest discover tests
@@ -144,6 +145,13 @@ their data files are downloaded from the organisers' GitHub the first time
 they are used (into `cec2022_data/`, or the folder named by the
 `CEC2022_DATA` environment variable). They are not stored in this
 repository because the organisers' repository has no license.
+
+The CEC 2017 functions (Awad et al., 2016) are in
+`sound_heuristic/cec2017.py`, a port of the organisers' C code; their
+data goes into `cec2017_data/` (or `CEC2017_DATA`) in the same way. From
+version 3 on, settings are chosen on CEC 2017 and tested on CEC 2022, so
+the CEC 2022 results stay a fair test. Where runs get stuck, the port
+gives the same values as the published jSO results, to 4–7 digits.
 
 `-i` selects one of the 23 test functions in `sound_heuristic/fitness.py`.
 Each run reports the mean, standard deviation, median, best and worst
