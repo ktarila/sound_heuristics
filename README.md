@@ -355,7 +355,7 @@ without it, results are better on 7 and worse on 2, mostly by small
 amounts, but one f15 run gets stuck and the average place drops. It is
 kept because it is part of the original model; it is worth revisiting.
 
-Run with `python benchmark.py --ablate random` (or `nearest`, `towards`),
+Run with `python benchmark.py --ablate random` (or `nearest`, `towards`, `pbest`),
 `--kappa 1`, `--archive 0` or `--refine 0`, adding `--suite shifted` or
 `--suite rotated`.
 
@@ -536,6 +536,43 @@ finds no entry significantly better, and for the first time one entry
 significantly worse: ZOCMAES (adjusted p = 0.047; full output in
 `results/cec2022_D10_v3-noisy_published.txt`). Most entries still do
 better on F4, F7 and F8.
+
+#### Is listening better than the usual rule of differential evolution?
+
+Much of the search is borrowed from differential evolution (the move, the
+crossover, the echoes, the step-size memory), so the fair question is
+whether the sound model adds anything. The test: change only whom each
+agent moves towards. In place of the source it hears loudest, each agent
+moves towards a random one of the best few agents, always towards (the
+"current-to-pbest" rule of Zhang & Sanderson, 2009). With our random push,
+this is the move of L-SHADE (Tanabe & Fukunaga, 2014). Two forms were run:
+the best 11% (L-SHADE), and the best 25% shrinking to 12.5% over each
+group search (jSO, Brest et al., 2017). Group size, shrinking, hearing,
+step-size memory, restarts and refinement are the same. Run with
+`--ablate pbest` or `pbest-jso`; results in `results/*_de-rule-*.json`
+and the comparisons in `results/*_vs_de-rule.txt`.
+
+Functions with a significant difference (Wilcoxon, 30 runs):
+
+| | listening better | DE rule better | Friedman and Holm |
+|---|---|---|---|
+| CEC 2017, best 11% | 7 | 7 | no difference |
+| CEC 2017, jSO form | 7 | 6 | no difference |
+| CEC 2022, best 11% | 2 | 3 | no difference |
+| CEC 2022, jSO form | 3 | 2 | no difference |
+
+Overall they tie, but each is strong in different places. Listening wins on
+the blended functions with traps: CEC 2017 F22 (21 against 93 and 100,
+where the DE rule is trapped in almost every run), F24 (111 against 269
+and 292), F12 and F18; CEC 2022 F10 (81 against 98 and 100) and F6. The DE
+rule wins on the Rastrigin and Schwefel kinds of function: CEC 2017 F5 and
+F8 (2.3 against 3.3), F10 (43 and 57 against 99); CEC 2022 F4 (2.4 against
+3.5) and F7. This fits the design: an agent that mostly hears its
+neighbours keeps separate groups apart and avoids rushing into one valley,
+while a pull towards a few of the best agents from anywhere is better at
+walking across a regular field of valleys. So the sound rule is a real
+alternative to the DE rule, not a relabelling of it. Getting both
+strengths in one method is still open.
 
 #### Tried and dropped in version 3: choosing between methods
 

@@ -1,0 +1,30 @@
+cec2022, 10 coordinates; 30 runs; 200000 evaluations per run
+Mean error; +/-/= : v3-noisy significantly better / worse / no different (Wilcoxon rank-sum, 5% level)
+
+F          v3-noisy  de-rule-0.11   de-rule-jso
+F1                0           0 =           0 =
+F2            0.664        0.93 =        2.26 +
+F3                0           0 =           0 =
+F4             3.48        2.39 -        2.35 -
+F5                0           0 =           0 =
+F6           0.0981       0.273 +        0.29 +
+F7           0.0267     0.00186 -    0.000327 -
+F8             1.94        1.24 =        1.39 =
+F9              229         229 =         229 =
+F10            81.1         100 -          98 =
+F11               0           0 =           0 =
+F12             159         160 +         161 +
+
+v3-noisy better / worse / no different:
+  vs de-rule-0.11    2 /  3 /  7
+  vs de-rule-jso     3 /  2 /  7
+
+Friedman test on mean errors (average rank, 1 = best):
+  v3-noisy       1.92
+  de-rule-0.11   2.00
+  de-rule-jso    2.08
+  statistic 0.29, p-value 0.867
+
+Holm's comparison with v3-noisy (adjusted p-value below the level means a real difference):
+  de-rule-jso    ranks worse than v3-noisy; p = 0.683, adjusted p = 1
+  de-rule-0.11   ranks worse than v3-noisy; p = 0.838, adjusted p = 1

@@ -5,6 +5,7 @@
     python benchmark.py --suite rotated      # ... moved and turned
     python benchmark.py --ablate random      # listen to a random agent instead
     python benchmark.py --ablate towards     # never move away from an agent
+    python benchmark.py --ablate pbest       # differential evolution's rule
     python benchmark.py --refine 0 --kappa 1 # switch parts off
     python benchmark.py --suite cec2022 --dim 10 --save results/sound.json
     python benchmark.py --suite cec2017 --dim 10 --runs 10
@@ -78,9 +79,46 @@ class TowardsOnly(SoundSearch):
         return np.ones(len(fitness))
 
 
+class BestFewSource(SoundSearch):
+    """Test version: the usual rule of differential evolution (Storn &
+    Price, 1997) instead of listening. Every agent moves towards a random
+    one of the best few agents (at least 2), always towards, as in
+    "current-to-pbest" (Zhang & Sanderson, 2009). Loudness and distance
+    play no part. Everything else is unchanged. ``share``: the share of the
+    group counted as the best few (L-SHADE uses 0.11)."""
+
+    share = 0.11
+
+    def best_share(self, kappa):
+        """Share of the group that counts as the best few."""
+        return self.share
+
+    def loudest_source(self, population, fitness, kappa, noisy=False):
+        n = len(population)
+        top = max(2, int(round(self.best_share(kappa) * n)))
+        best = np.argsort(fitness, kind="stable")[:top]
+        return best[self.rng.integers(0, top, n)]
+
+    @staticmethod
+    def direction(fitness, source):
+        return np.ones(len(fitness))
+
+
+class BestFewShrinking(BestFewSource):
+    """As BestFewSource, but the best few are the best 25% of the group at
+    the start of each group search and the best 12.5% at the end (as in
+    jSO, Brest et al., 2017)."""
+
+    def best_share(self, kappa):
+        span = self.kappa - self.kappa_start
+        progress = (kappa - self.kappa_start) / span if span else 1.0
+        return 0.25 - 0.125 * progress
+
+
 CEC = {"cec2022": cec2022, "cec2017": cec2017}
 ALGORITHMS = {"none": SoundSearch, "random": RandomSource,
-              "nearest": NearestSource, "towards": TowardsOnly}
+              "nearest": NearestSource, "towards": TowardsOnly,
+              "pbest": BestFewSource, "pbest-jso": BestFewShrinking}
 
 
 def transformed(index, suite, dim=10):

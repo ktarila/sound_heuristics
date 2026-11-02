@@ -332,5 +332,27 @@ class TestSolution(unittest.TestCase):
             S.SoundSearch(F.f1, [0], [1], focus=0)
 
 
+    def test_best_few_rule(self):
+        import benchmark
+        rng = np.random.default_rng(0)
+        population = rng.uniform(-5, 5, (100, 4))
+        fitness = np.sum(population ** 2, axis=1)
+        rank = np.argsort(np.argsort(fitness))
+        search = benchmark.BestFewSource(
+            F.f1, [-5] * 4, [5] * 4, pop_size=100,
+            rng=np.random.default_rng(1))
+        source = search.loudest_source(population, fitness, 4.0)
+        self.assertTrue(np.all(rank[source] < 11))  # the best 11%
+        self.assertGreater(len(set(source)), 5)
+        np.testing.assert_array_equal(
+            search.direction(fitness, source), np.ones(100))  # always towards
+        # the jSO form: best 25% at the start, best 12.5% at the end
+        jso = benchmark.BestFewShrinking(
+            F.f1, [-5] * 4, [5] * 4, pop_size=100, kappa_start=0.0,
+            kappa=8.0, rng=np.random.default_rng(1))
+        self.assertAlmostEqual(jso.best_share(0.0), 0.25)
+        self.assertAlmostEqual(jso.best_share(8.0), 0.125)
+
+
 if __name__ == "__main__":
     unittest.main()

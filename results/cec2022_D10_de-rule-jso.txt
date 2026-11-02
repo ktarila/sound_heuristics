@@ -1,0 +1,15 @@
+suite=cec2022 runs=30 pop=180 final_pop=4 evaluations=200000 kappa=0.0->8.0 refine=0.1 archive=1.0 stall=0.1 noisy_after=0.1 focus=2.0 ablate=pbest
+dim=10 evaluations per run=200000
+   F  mean error        std      median       best      worst
+F1             0          0           0          0          0
+F2         2.259       2.01       3.987          0       3.99
+F3             0          0           0          0          0
+F4         2.355      0.805        1.99      0.995       3.98
+F5             0          0           0          0          0
+F6        0.2898      0.156      0.2855     0.0151      0.498
+F7     0.0003272    0.00125           0          0     0.0054
+F8         1.387       1.98       0.456     0.0128       7.86
+F9         229.3   9.31e-11       229.3        229        229
+F10        98.04       11.9       100.2       35.2        100
+F11            0          0           0          0          0
+F12        160.6       1.37       160.7        159        163
