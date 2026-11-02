@@ -216,9 +216,9 @@ class TestSolution(unittest.TestCase):
         class Counting(S.SoundSearch):
             starts = 0
 
-            def init_population(self):
+            def init_population(self, size=None):
                 self.starts += 1
-                return super().init_population()
+                return super().init_population(size)
 
         def flat(x):  # every agent equally good from the start
             return np.zeros(len(np.atleast_2d(x)))
@@ -245,6 +245,37 @@ class TestSolution(unittest.TestCase):
             # the result is never worse than the best seen during the run
             self.assertEqual(result.best_fitness, result.curve[-1])
             self.assertEqual(result.best_fitness, F.f9(result.best_x))
+
+    def test_group_shrinks(self):
+        sizes = []
+
+        def spy(x):
+            sizes.append(len(x))
+            return F.f1(x)
+        search = S.SoundSearch(spy, [-100] * 5, [100] * 5, pop_size=40,
+                               final_size=4, stall=0, refine=0.3,
+                               rng=np.random.default_rng(0))
+        result = search.run(evaluations=10_000)
+        self.assertEqual(result.evaluations, 10_000)
+        self.assertEqual(sum(sizes), 10_000)
+        group = [n for n in sizes if n > 1]  # refinement tries one point
+        self.assertEqual(group[0], 40)
+        self.assertTrue(np.all(np.diff(group) <= 0))
+        self.assertEqual(group[-1], 4)
+        self.assertEqual(result.curve[-1], result.best_fitness)
+
+    def test_exact_evaluations(self):
+        search = S.SoundSearch(F.f1, [-100] * 5, [100] * 5, pop_size=30,
+                               rng=np.random.default_rng(0))
+        result = search.run(evaluations=1000)  # not a multiple of 30
+        self.assertEqual(result.evaluations, 1000)
+        self.assertEqual(len(result.curve), 33)
+        self.assertEqual(result.curve[-1], result.best_fitness)
+
+    def test_invalid_final_size(self):
+        for size in (3, 21):
+            with self.assertRaises(ValueError):
+                S.SoundSearch(F.f1, [0], [1], pop_size=20, final_size=size)
 
 
 if __name__ == "__main__":

@@ -13,8 +13,9 @@ random current or past position). Only some coordinates of the move are
 heard; the rest stay put. A move is kept only if it improves the agent.
 
 ``kappa`` grows during the run, so agents first hear mostly their
-neighbours and later hear the best agents from far away. At the end the
-best agent refines its point alone. See README.
+neighbours and later hear the best agents from far away. The group can
+start large and shrink, dropping its worst agents. At the end the best
+agent refines its point alone. See README.
 """
 from collections import namedtuple
 
@@ -119,7 +120,7 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
                  pop_size=cfg.POP_SIZE, kappa=cfg.KAPPA,
                  kappa_start=cfg.KAPPA_START, refine=cfg.REFINE,
                  archive=cfg.ARCHIVE, stall=cfg.STALL,
-                 memory_size=cfg.MEMORY_SIZE,
+                 final_size=cfg.FINAL_SIZE, memory_size=cfg.MEMORY_SIZE,
                  minimisation=cfg.MINIMISATION, rng=None):
         """``fitness_function`` maps an ``(agents, coordinates)`` array to
         one value per agent. ``lower``/``upper``: one number or one per
@@ -128,6 +129,9 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         ``archive``: echoes kept, as a multiple of ``pop_size``.
         ``stall``: start the group again when its best value has not
         really improved for this share of all evaluations (0: never).
+        ``final_size``: agents left when the group search ends; the group
+        shrinks evenly from ``pop_size``, dropping its worst agents
+        (None: no shrinking).
         """
         self.lower = np.atleast_1d(np.asarray(lower, dtype=float))
         self.upper = np.atleast_1d(np.asarray(upper, dtype=float))
@@ -141,6 +145,9 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             raise ValueError("refine must be in [0, 1)")
         if not 0 <= stall <= 1:
             raise ValueError("stall must be in [0, 1]")
+        final_size = pop_size if final_size is None else final_size
+        if not 4 <= final_size <= pop_size:
+            raise ValueError("final_size must be in [4, pop_size]")
         self.fitness_function = fitness_function
         self.minimisation = minimisation
         self.pop_size = pop_size
@@ -149,6 +156,7 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         self.refine = refine
         self.archive = archive
         self.stall = stall
+        self.final_size = final_size
         self.memory_size = memory_size
         self.rng = rng if rng is not None else np.random.default_rng()
         self.evaluations = 0
@@ -169,10 +177,19 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         """Note the best value so far."""
         self._history.append((self.evaluations, best_f))
 
-    def init_population(self):
-        """Agents placed at random within the limits."""
-        return self.rng.uniform(self.lower, self.upper,
-                                (self.pop_size, self.dim))
+    def init_population(self, size=None):
+        """``size`` agents (default ``pop_size``) placed at random within
+        the limits."""
+        size = self.pop_size if size is None else size
+        return self.rng.uniform(self.lower, self.upper, (size, self.dim))
+
+    def group_size(self, budget):
+        """Planned number of agents once ``self.evaluations`` of the
+        ``budget`` for the group search are used: falls in a straight line
+        from ``pop_size`` to ``final_size``."""
+        used = min(1.0, self.evaluations / budget)
+        return int(round(self.pop_size
+                         + (self.final_size - self.pop_size) * used))
 
     # -- sound phase -------------------------------------------------
 
@@ -230,11 +247,10 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         gain in the best value for ``patience`` evaluations (a real gain
         is at least 1% of the spread of the group's values)."""
         start = self.evaluations
-        population = self.init_population()
+        population = self.init_population(self.group_size(budget))
         fitness = self._evaluate(population)
         memory = SuccessMemory(self.memory_size)
         echoes = np.empty((0, self.dim))
-        capacity = int(round(self.archive * self.pop_size))
         self._record(fitness.min())
         best, last_gain = fitness.min(), self.evaluations
 
@@ -242,15 +258,16 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             # loudness counts more and more as the phase goes on
             progress = (self.evaluations - start) / (budget - start)
             kappa = self.kappa_start + (self.kappa - self.kappa_start) * progress
-            step, hearing = memory.sample(self.pop_size, self.rng)
+            size = len(population)
+            step, hearing = memory.sample(size, self.rng)
             move = self.compute_move(population, fitness, echoes, step, kappa)
             candidate = np.where(self.hearing_mask(hearing),
                                  population + move, population)
             candidate = self.fix_boundary(candidate, population)
 
             # never go over the budget: points not evaluated are not kept
-            count = min(self.pop_size, budget - self.evaluations)
-            candidate_fitness = np.full(self.pop_size, np.inf)
+            count = min(size, budget - self.evaluations)
+            candidate_fitness = np.full(size, np.inf)
             candidate_fitness[:count] = self._evaluate(candidate[:count])
 
             # keep improving moves; the place left behind becomes an echo
@@ -258,11 +275,18 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             memory.update(step[improved], hearing[improved],
                           fitness[improved] - candidate_fitness[improved])
             echoes = np.vstack([echoes, population[improved]])
+            population[improved] = candidate[improved]
+            fitness[improved] = candidate_fitness[improved]
+
+            # the group shrinks: the worst agents leave
+            size = self.group_size(budget)
+            if size < len(population):
+                keep = np.argsort(fitness, kind="stable")[:size]
+                population, fitness = population[keep], fitness[keep]
+            capacity = int(round(self.archive * len(population)))
             if len(echoes) > capacity:  # forget random echoes when full
                 keep = self.rng.permutation(len(echoes))[:capacity]
                 echoes = echoes[keep]
-            population[improved] = candidate[improved]
-            fitness[improved] = candidate_fitness[improved]
             self._record(fitness.min())
 
             if patience:
@@ -335,12 +359,17 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
 
     # -- whole run ---------------------------------------------------
 
-    def run(self, iterations=cfg.ITERATIONS):
-        """Run with ``pop_size * (iterations + 1)`` evaluations.
+    def run(self, iterations=cfg.ITERATIONS, evaluations=None):
+        """Run with ``pop_size * (iterations + 1)`` evaluations, or exactly
+        ``evaluations`` if given.
 
-        ``curve[t]`` is the best value after iteration ``t``.
+        ``curve[t]`` is the best value after ``pop_size * (t + 2)``
+        evaluations (the end of iteration ``t`` for a group that does not
+        shrink).
         """
-        total = self.pop_size * (iterations + 1)
+        if evaluations is not None:
+            iterations = -(-evaluations // self.pop_size) - 1
+        total = evaluations or self.pop_size * (iterations + 1)
         self.evaluations = 0
         self._history = []
         sound_budget = max(self.pop_size,
@@ -356,7 +385,8 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
                 best_x, best_f = population[best].copy(), fitness[best]
                 # first refinement step about as wide as that group's spread
                 spread = float(np.sqrt(np.mean(population.var(axis=0))))
-            if sound_budget - self.evaluations < 2 * self.pop_size:
+            if (sound_budget - self.evaluations
+                    < 2 * self.group_size(sound_budget)):
                 break  # too little left for a new start
 
         if self.evaluations < total:

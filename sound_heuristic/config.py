@@ -28,6 +28,11 @@ ARCHIVE = 1.0
 # Start the group again (keeping the best point) when its best value has
 # not really improved for this share of all evaluations. 0: never.
 STALL = 0.1  # chosen on the moved and turned classic functions, 30 coordinates
+# Agents left when the group search ends: the group shrinks evenly from
+# POP_SIZE to this, dropping its worst agents (Tanabe & Fukunaga, 2014).
+# None: no shrinking. It helps only when the group starts large (about
+# 18 agents per coordinate); see benchmark.py for the CEC settings.
+FINAL_SIZE = None
 # Slots in the memory of what worked, and the starting step size and
 # hearing rate (chance that each coordinate takes part in a move).
 MEMORY_SIZE = 5

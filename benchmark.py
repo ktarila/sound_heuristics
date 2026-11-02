@@ -12,10 +12,11 @@
 Classic suites: same effort as the Grey Wolf Optimizer paper, 30 agents x
 500 iterations (15,030 evaluations) per run, 30 runs per function.
 CEC 2022: the competition's effort, 200,000 evaluations per run for 10
-coordinates and 1,000,000 for 20, with 50 agents. CEC 2017 (used to
-choose settings, so that CEC 2022 stays a fair test): 10,000 evaluations
-per coordinate, with 50 agents. Compare saved results with
-``compare.py``.
+coordinates and 1,000,000 for 20. CEC 2017 (used to choose settings, so
+that CEC 2022 stays a fair test): 10,000 evaluations per coordinate. On
+both CEC sets the group starts with 18 agents per coordinate and shrinks
+to 4, as in L-SHADE (Tanabe & Fukunaga, 2014). Compare saved results
+with ``compare.py``.
 """
 import argparse
 import json
@@ -120,9 +121,9 @@ def one_run(task):
     search = ALGORITHMS[args.ablate](
         func, lower, upper, pop_size=args.pop, kappa=args.kappa,
         kappa_start=args.kappa_start, refine=args.refine,
-        archive=args.archive, stall=args.stall,
+        archive=args.archive, stall=args.stall, final_size=args.final_pop,
         rng=np.random.default_rng(search_seed))
-    return search.run(args.iterations).best_fitness
+    return search.run(evaluations=args.evaluations).best_fitness
 
 
 def ranks(means):
@@ -162,8 +163,7 @@ def report_ranks(means):
 def report_errors(args, funcs, errors):
     """Print CEC-style errors; errors below 1e-8 count as 0."""
     errors = np.where(errors < 1e-8, 0.0, errors)
-    print(f"dim={args.dim} evaluations per run="
-          f"{args.pop * (args.iterations + 1)}")
+    print(f"dim={args.dim} evaluations per run={args.evaluations}")
     print(f"{'F':>4} {'mean error':>11} {'std':>10} {'median':>11} "
           f"{'best':>10} {'worst':>10}")
     for index, row in zip(funcs, errors):
@@ -177,8 +177,8 @@ def save(args, funcs, errors):
                          else f"sound-{args.ablate}")
     record = {
         "name": name, "suite": args.suite, "seed": args.seed,
-        "runs": args.runs, "pop": args.pop, "iterations": args.iterations,
-        "evaluations": args.pop * (args.iterations + 1),
+        "runs": args.runs, "pop": args.pop, "final_pop": args.final_pop,
+        "evaluations": args.evaluations,
         "settings": {"kappa": args.kappa, "kappa_start": args.kappa_start,
                      "refine": args.refine, "archive": args.archive,
                      "stall": args.stall,
@@ -208,7 +208,11 @@ def parse_args():
     parser.add_argument("--iterations", type=int, default=None,
                         help="default: 500, or the CEC budget")
     parser.add_argument("--pop", type=int, default=None,
-                        help="default: 30, or 50 for the CEC sets")
+                        help="agents at the start; default: 30, or 18 per "
+                             "coordinate for the CEC sets")
+    parser.add_argument("--final-pop", type=int, default=None,
+                        help="agents at the end of the group search; "
+                             "default: no shrinking, or 4 for the CEC sets")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
     parser.add_argument("--kappa", type=float, default=cfg.KAPPA)
@@ -227,13 +231,17 @@ def parse_args():
     if cec and args.dim not in CEC[args.suite].DIMS:
         parser.error(f"--dim must be one of {CEC[args.suite].DIMS}")
     if args.pop is None:
-        args.pop = 50 if cec else 30
-    if args.iterations is None:
-        args.iterations = 500
-        if args.suite == "cec2022":
-            args.iterations = cec2022.BUDGET[args.dim] // args.pop - 1
-        elif args.suite == "cec2017":
-            args.iterations = cec2017.budget(args.dim) // args.pop - 1
+        args.pop = 18 * args.dim if cec else 30
+    if args.final_pop is None and cec:
+        args.final_pop = 4
+    if args.iterations is not None:
+        args.evaluations = args.pop * (args.iterations + 1)
+    elif args.suite == "cec2022":
+        args.evaluations = cec2022.BUDGET[args.dim]
+    elif args.suite == "cec2017":
+        args.evaluations = cec2017.budget(args.dim)
+    else:
+        args.evaluations = args.pop * 501
     return args
 
 
@@ -256,7 +264,8 @@ def main():
         save(args, funcs, errors)
 
     print(f"suite={args.suite} runs={args.runs} pop={args.pop} "
-          f"iterations={args.iterations} kappa={args.kappa} "
+          f"final_pop={args.final_pop} evaluations={args.evaluations} "
+          f"kappa={args.kappa} "
           f"refine={args.refine} archive={args.archive} "
           f"stall={args.stall} ablate={args.ablate}")
     if args.suite in CEC:

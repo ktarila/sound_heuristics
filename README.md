@@ -11,7 +11,8 @@ and Computer Science 36(5): 98–106, 2021.
 [doi:10.9734/JAMCS/2021/v36i530366](https://doi.org/10.9734/JAMCS/2021/v36i530366)
 
 This is version 3, in progress: version 2 plus starting the group again
-when it gets stuck (step 8). The sound model (steps 1–3 below) follows
+when it gets stuck (step 8) and a group that shrinks during the run
+(step 9). The sound model (steps 1–3 below) follows
 the paper, with two changes: loudness comes from an agent's place in the
 ranking rather than its raw value, and a loudness exponent `κ` rises
 during the run. The rest was reworked to fix problems found in version 1
@@ -116,9 +117,23 @@ for 10% of all evaluations (`stall`). A real gain is at least 1% of the
 spread between the group's best and worst values, so it does not depend
 on the scale or offset of the function.
 
+### 9. The group shrinks
+
+On the CEC functions the group starts large, with 18 agents per
+coordinate (180 for 10 coordinates), and shrinks evenly to 4 agents by
+the end of the sound phase. Each time it shrinks, the worst agents leave.
+Early on, many agents spread over many valleys; later, the evaluations go
+to the few best agents. This schedule comes from L-SHADE (Tanabe &
+Fukunaga, 2014). A group that starts again late in the run starts at the
+size planned for that moment.
+
+On the classic functions the group keeps 30 agents. Their budget is 13
+times smaller, and there letting the worst agents leave did not help
+(see [What changed from version 1](#what-changed-from-version-1)).
+
 A run with `n` agents and `iterations` iterations uses
 `n × (iterations + 1)` function evaluations, the same as one evaluation per
-agent per iteration.
+agent per iteration. `run(evaluations=...)` sets the number exactly.
 
 ## Usage
 
@@ -130,10 +145,11 @@ python entry.py -i 9 -n 500 --pop 30 --seed 0
 python entry.py -i 5 --kappa 8 --refine 0.2  # change settings
 python entry.py --tune 5 9 10 12 -n 500 --samples 40 --runs 5 --seed 0
 python benchmark.py                          # reproduce the results below
-python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_sound.json
+python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_v3-shrink.json
+python benchmark.py --suite cec2022 --dim 10 --pop 50 --final-pop 50 --stall 0   # version 2
 python benchmark.py --suite cec2017 --dim 10 --runs 10   # design set
-python compare.py results/cec2022_D10_*.json --control sound
-python compare.py results/cec2022_D10_sound.json --published  # vs CEC 2022 entries
+python compare.py results/cec2022_D10_*.json --control v3-shrink
+python compare.py results/cec2022_D10_v3-shrink.json --published  # vs CEC 2022 entries
 python -m unittest discover tests
 ```
 
@@ -177,7 +193,8 @@ print(result.best_fitness, result.evaluations)
 | `refine` | 0.3 | share of evaluations for the final refinement |
 | `archive` | 1.0 | echoes kept, as a multiple of the number of agents |
 | `stall` | 0.1 | start the group again after this share of all evaluations without a real gain (0: never) |
-| `pop_size` | 50 | number of agents |
+| `pop_size` | 50 | number of agents at the start |
+| `final_size` | None | agents left at the end of the sound phase; the group shrinks evenly from `pop_size` (None: no shrinking) |
 
 ## Results
 
@@ -414,6 +431,57 @@ On the classic functions at the usual budget, nothing changes.
 Starting again does not get past the traps on F9, F10 and F12. Each new
 group falls into the same trap as the last one.
 
+#### Version 3: a shrinking group
+
+Step 9 was chosen on the CEC 2017 functions at 10 coordinates (100,000
+evaluations, 10 runs per function), so CEC 2022 stays a fair test. On CEC
+2017 (`results/cec2017_D10_*.json`) it beats version 3 without shrinking
+on 3 of 29 functions and loses on none. Its mean error drops most on F10
+(Schwefel: 174 to 97), F12 (38 to 3.5) and F24 (288 to 180). Starting with
+100 or 250 agents is slightly worse than 180, and shrinking from 50 is
+worse than not shrinking at all. Once the group shrinks, restarts make
+little difference: without them, the result is better on 1 function and
+worse on none. Restarts were kept, because they still stop a group that
+is completely stuck.
+
+On CEC 2022 (`results/cec2022_D10_v3-shrink.json`), the shrinking group
+beats version 3 without it on 3 functions and loses on none. It beats
+version 2 on 7 and loses on none, and the Friedman and Holm tests find
+this difference real over all 12 functions (adjusted p = 0.03). Mean
+errors where the versions differ:
+
+| | F2 | F4 | F6 | F7 | F8 | F10 | F12 |
+|---|---|---|---|---|---|---|---|
+| version 2 | 2.82 | 6.43 | 0.108 | 0.176 | 8.32 | 104 | 161 |
+| version 3, step 8 | 0.664 | **5.14** | 0.094 | 0.487 | 5.86 | 100 | 160 |
+| version 3, steps 8 and 9 | **0.399** | **5.14** | **0.0539** | **0.0539** | **2.48** | **97.8** | **159** |
+
+Among the competition entries, its average rank is 6.25: 4th of 13, level
+with jSObinexpEig and IMPML-SHADE, behind EA4eig (4.08), S-LSHADE-DP
+(4.21) and NL-SHADE-LBC (5.38). Holm's test finds no entry significantly
+better (full output in `results/cec2022_D10_v3-shrink_published.txt`).
+Most entries still do better on F4 (Rastrigin), F7, F8 and F10. On F9 it
+ends at 229.3, like most of them.
+
+#### Tried and dropped in version 3: choosing between methods
+
+A hyper-heuristic is a top-level method that picks which of several
+low-level methods to use as the search goes on (Burke et al., 2003). It
+was tried on CEC 2017 to choose between listening rules, at three levels:
+
+- **For each 2% of the budget** (loudest agent, nearest agent, or
+  refining the best point): worse than plain restarts on 4 functions,
+  better on none.
+- **For each new group** (loudest agent, nearest agent, or a group four
+  times larger): the same as plain restarts on 27 of 29 functions. A run
+  starts only 2 or 3 groups, too few choices to learn from.
+- **For each agent at every iteration** (loudest, nearest, or the best
+  agents far away; a rule is picked more often when its moves improve
+  agents more): worse on 2 functions, better on none.
+
+The listening rules are too alike, and step size and hearing rate
+already adapt, so there is little left for a top-level method to gain.
+
 ### Strengths and weaknesses
 
 **Strengths:** the low-dimensional functions with several valleys (f14–f23:
@@ -429,10 +497,10 @@ and the noisy quartic (f7), which is worse than in version 1.
 ### Caveats
 
 - The settings were chosen by comparing variants on the classic functions
-  (plain, moved and turned), so those results are somewhat optimistic.
-  The CEC 2022 results are free of this, but so far only at 10
-  coordinates. The CEC 2017 set (Awad et al., 2016) would be another
-  independent test.
+  (plain, moved and turned) and, from version 3 on, on CEC 2017 (Awad et
+  al., 2016), so those results are somewhat optimistic. The CEC 2022
+  results are free of this, but so far only at 10 coordinates. The start
+  of 18 agents per coordinate has been tested only at 10 coordinates.
 - The CEC 2022 code has not been run side by side with the organisers'
   code. It is checked at each function's best point and against the
   values in the entries' results (above).
@@ -440,8 +508,8 @@ and the noisy quartic (f7), which is worse than in version 1.
   Their numbers come from a paper, not from runs with the same seeds.
 - Several parts are borrowed from existing methods (cited above): the
   difference move and crossover from differential evolution, the echo
-  archive from JADE, the success memory and limit rule from SHADE and
-  L-SHADE, and the refinement from Igel et al. (2006). What is new is the
+  archive from JADE, the success memory, limit rule and shrinking group
+  from SHADE and L-SHADE, and the refinement from Igel et al. (2006). What is new is the
   sound model, which decides whom each agent moves relative to and in
   which direction.
 
@@ -474,7 +542,9 @@ Ideas that were tried and dropped: a direct pull towards the best few
 agents (faster on smooth bowls but worse on f14–f23 and on functions with
 many valleys), and letting the worst agents leave over time (solves
 Rastrigin only because its coordinates are independent, and is worse on
-f4, f10, f12 and f13).
+f4, f10, f12 and f13). That was with the classic budget and a group of
+30. With the CEC budgets and a group that starts at 180, it helps, and
+version 3 uses it (step 9).
 
 ## References
 
@@ -488,6 +558,10 @@ f4, f10, f12 and f13).
   method and influence of parameter tuning. *Swarm and Evolutionary
   Computation*, 89, 101623.
   [doi:10.1016/j.swevo.2024.101623](https://doi.org/10.1016/j.swevo.2024.101623)
+- Burke, E. K., Kendall, G. & Soubeiga, E. (2003). A tabu-search
+  hyperheuristic for timetabling and rostering. *Journal of Heuristics*,
+  9(6), 451–470.
+  [doi:10.1023/B:HEUR.0000012446.94732.b6](https://doi.org/10.1023/B:HEUR.0000012446.94732.b6)
 - Demšar, J. (2006). Statistical comparisons of classifiers over multiple
   data sets. *Journal of Machine Learning Research*, 7, 1–30.
   [jmlr.org/papers/v7/demsar06a.html](https://www.jmlr.org/papers/v7/demsar06a.html)
