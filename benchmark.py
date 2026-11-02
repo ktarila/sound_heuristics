@@ -15,7 +15,9 @@ CEC 2022: the competition's effort, 200,000 evaluations per run for 10
 coordinates and 1,000,000 for 20. CEC 2017 (used to choose settings, so
 that CEC 2022 stays a fair test): 10,000 evaluations per coordinate. On
 both CEC sets the group starts with 18 agents per coordinate and shrinks
-to 4, as in L-SHADE (Tanabe & Fukunaga, 2014). Compare saved results
+to 4, as in L-SHADE (Tanabe & Fukunaga, 2014); loudness counts from 0 up
+to 8 (kappa), and 10% of the evaluations go to refinement. These longer
+runs need less refinement than the classic ones. Compare saved results
 with ``compare.py``.
 """
 import argparse
@@ -55,7 +57,7 @@ TRANSFORMABLE = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13]
 class RandomSource(SoundSearch):
     """Test version: listens to a random agent instead of the loudest."""
 
-    def loudest_source(self, population, fitness, kappa):
+    def loudest_source(self, population, fitness, kappa, noisy=False):
         n = len(population)
         pick = self.rng.integers(0, n - 1, n)
         return pick + (pick >= np.arange(n))
@@ -64,7 +66,7 @@ class RandomSource(SoundSearch):
 class NearestSource(SoundSearch):
     """Test version: listens to the nearest agent, ignoring loudness."""
 
-    def loudest_source(self, population, fitness, kappa):
+    def loudest_source(self, population, fitness, kappa, noisy=False):
         return super().loudest_source(population, np.zeros(len(fitness)), 1)
 
 
@@ -122,6 +124,7 @@ def one_run(task):
         func, lower, upper, pop_size=args.pop, kappa=args.kappa,
         kappa_start=args.kappa_start, refine=args.refine,
         archive=args.archive, stall=args.stall, final_size=args.final_pop,
+        noisy_after=args.noisy_after, focus=args.focus,
         rng=np.random.default_rng(search_seed))
     return search.run(evaluations=args.evaluations).best_fitness
 
@@ -181,7 +184,8 @@ def save(args, funcs, errors):
         "evaluations": args.evaluations,
         "settings": {"kappa": args.kappa, "kappa_start": args.kappa_start,
                      "refine": args.refine, "archive": args.archive,
-                     "stall": args.stall,
+                     "stall": args.stall, "noisy_after": args.noisy_after,
+                     "focus": args.focus,
                      "ablate": args.ablate},
         "errors": {str(i): row.tolist() for i, row in zip(funcs, errors)},
     }
@@ -215,11 +219,16 @@ def parse_args():
                              "default: no shrinking, or 4 for the CEC sets")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
-    parser.add_argument("--kappa", type=float, default=cfg.KAPPA)
-    parser.add_argument("--kappa-start", type=float, default=cfg.KAPPA_START)
-    parser.add_argument("--refine", type=float, default=cfg.REFINE)
+    parser.add_argument("--kappa", type=float, default=None,
+                        help="default: 4, or 8 for the CEC sets")
+    parser.add_argument("--kappa-start", type=float, default=None,
+                        help="default: 1, or 0 for the CEC sets")
+    parser.add_argument("--refine", type=float, default=None,
+                        help="default: 0.3, or 0.1 for the CEC sets")
     parser.add_argument("--archive", type=float, default=cfg.ARCHIVE)
     parser.add_argument("--stall", type=float, default=cfg.STALL)
+    parser.add_argument("--noisy-after", type=float, default=cfg.NOISY_AFTER)
+    parser.add_argument("--focus", type=float, default=cfg.FOCUS)
     parser.add_argument("--ablate", default="none", choices=list(ALGORITHMS),
                         help="replace loudest-source listening")
     parser.add_argument("--save", default=None,
@@ -234,6 +243,12 @@ def parse_args():
         args.pop = 18 * args.dim if cec else 30
     if args.final_pop is None and cec:
         args.final_pop = 4
+    # long CEC runs: loudness counts from 0 up to 8, less refinement
+    for name, classic, long_run in (("kappa", cfg.KAPPA, 8.0),
+                                    ("kappa_start", cfg.KAPPA_START, 0.0),
+                                    ("refine", cfg.REFINE, 0.1)):
+        if getattr(args, name) is None:
+            setattr(args, name, long_run if cec else classic)
     if args.iterations is not None:
         args.evaluations = args.pop * (args.iterations + 1)
     elif args.suite == "cec2022":
@@ -265,9 +280,10 @@ def main():
 
     print(f"suite={args.suite} runs={args.runs} pop={args.pop} "
           f"final_pop={args.final_pop} evaluations={args.evaluations} "
-          f"kappa={args.kappa} "
+          f"kappa={args.kappa_start}->{args.kappa} "
           f"refine={args.refine} archive={args.archive} "
-          f"stall={args.stall} ablate={args.ablate}")
+          f"stall={args.stall} noisy_after={args.noisy_after} "
+          f"focus={args.focus} ablate={args.ablate}")
     if args.suite in CEC:
         report_errors(args, funcs, errors)
         return

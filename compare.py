@@ -1,6 +1,6 @@
 """Compare saved benchmark results with statistical tests.
 
-    python compare.py results/cec2022_D10_*.json --control v3-shrink
+    python compare.py results/cec2022_D10_*.json --control v3-noisy
     python compare.py results/cec2022_D10_sound.json --published
 
 Prints, for every function, each algorithm's mean error, and whether the

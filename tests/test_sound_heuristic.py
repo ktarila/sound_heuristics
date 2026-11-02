@@ -277,6 +277,60 @@ class TestSolution(unittest.TestCase):
             with self.assertRaises(ValueError):
                 S.SoundSearch(F.f1, [0], [1], pop_size=20, final_size=size)
 
+    def test_noisy_hearing_follows_loudness(self):
+        rng = np.random.default_rng(0)
+        population = rng.uniform(-5, 5, (20, 4))
+        fitness = rng.normal(size=20)
+        heard = S.compute_intensity(population, fitness, 2.0)
+        search = S.SoundSearch(F.f1, [-5] * 4, [5] * 4, pop_size=20,
+                               focus=1.0, rng=np.random.default_rng(1))
+        picks = np.array([search.loudest_source(population, fitness, 2.0,
+                                                noisy=True)
+                          for _ in range(5000)])
+        self.assertFalse(np.any(picks == np.arange(20)))  # never itself
+        share = np.bincount(picks[:, 0], minlength=20) / len(picks)
+        np.testing.assert_allclose(share, heard[0] / heard[0].sum(),
+                                   atol=0.02)
+        # without noise, or with a very sharp focus: always the loudest
+        loudest = heard.argmax(axis=1)
+        np.testing.assert_array_equal(
+            search.loudest_source(population, fitness, 2.0), loudest)
+        search.focus = 1e6
+        np.testing.assert_array_equal(
+            search.loudest_source(population, fitness, 2.0, noisy=True),
+            loudest)
+
+    def test_hearing_turns_noisy_after_share(self):
+        flags = []
+
+        class Spy(S.SoundSearch):
+            def loudest_source(self, population, fitness, kappa,
+                               noisy=False):
+                flags.append((self.evaluations, noisy))
+                return super().loudest_source(population, fitness, kappa,
+                                              noisy)
+        for after in (0.5, 1.0):
+            flags.clear()
+            Spy(F.f1, [-100] * 5, [100] * 5, pop_size=20, stall=0,
+                refine=0.2, noisy_after=after,
+                rng=np.random.default_rng(0)).run(evaluations=2000)
+            used = np.array([e for e, _ in flags])
+            noisy = np.array([n for _, n in flags])
+            group_budget = 1600  # 80% of 2000; refinement is not a group
+            if after == 1.0:
+                self.assertFalse(noisy.any())
+            else:
+                np.testing.assert_array_equal(
+                    noisy, used >= after * group_budget)
+                self.assertTrue(noisy.any() and not noisy.all())
+
+    def test_invalid_noisy_settings(self):
+        for after in (-0.1, 1.1):
+            with self.assertRaises(ValueError):
+                S.SoundSearch(F.f1, [0], [1], noisy_after=after)
+        with self.assertRaises(ValueError):
+            S.SoundSearch(F.f1, [0], [1], focus=0)
+
 
 if __name__ == "__main__":
     unittest.main()

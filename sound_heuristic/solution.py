@@ -13,7 +13,9 @@ random current or past position). Only some coordinates of the move are
 heard; the rest stay put. A move is kept only if it improves the agent.
 
 ``kappa`` grows during the run, so agents first hear mostly their
-neighbours and later hear the best agents from far away. The group can
+neighbours and later hear the best agents from far away. After a while
+their hearing turns less exact: instead of always the loudest source, an
+agent turns towards a source with a chance that grows with its loudness. The group can
 start large and shrink, dropping its worst agents. At the end the best
 agent refines its point alone. See README.
 """
@@ -120,7 +122,8 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
                  pop_size=cfg.POP_SIZE, kappa=cfg.KAPPA,
                  kappa_start=cfg.KAPPA_START, refine=cfg.REFINE,
                  archive=cfg.ARCHIVE, stall=cfg.STALL,
-                 final_size=cfg.FINAL_SIZE, memory_size=cfg.MEMORY_SIZE,
+                 final_size=cfg.FINAL_SIZE, noisy_after=cfg.NOISY_AFTER,
+                 focus=cfg.FOCUS, memory_size=cfg.MEMORY_SIZE,
                  minimisation=cfg.MINIMISATION, rng=None):
         """``fitness_function`` maps an ``(agents, coordinates)`` array to
         one value per agent. ``lower``/``upper``: one number or one per
@@ -131,7 +134,10 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         really improved for this share of all evaluations (0: never).
         ``final_size``: agents left when the group search ends; the group
         shrinks evenly from ``pop_size``, dropping its worst agents
-        (None: no shrinking).
+        (None: no shrinking). ``noisy_after``: share of each group search
+        after which agents no longer always turn to the loudest source but
+        pick one at random, with chance proportional to its loudness to
+        the power ``focus`` (1: never).
         """
         self.lower = np.atleast_1d(np.asarray(lower, dtype=float))
         self.upper = np.atleast_1d(np.asarray(upper, dtype=float))
@@ -145,6 +151,10 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             raise ValueError("refine must be in [0, 1)")
         if not 0 <= stall <= 1:
             raise ValueError("stall must be in [0, 1]")
+        if not 0 <= noisy_after <= 1:
+            raise ValueError("noisy_after must be in [0, 1]")
+        if focus <= 0:
+            raise ValueError("focus must be positive")
         final_size = pop_size if final_size is None else final_size
         if not 4 <= final_size <= pop_size:
             raise ValueError("final_size must be in [4, pop_size]")
@@ -157,6 +167,8 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
         self.archive = archive
         self.stall = stall
         self.final_size = final_size
+        self.noisy_after = noisy_after
+        self.focus = focus
         self.memory_size = memory_size
         self.rng = rng if rng is not None else np.random.default_rng()
         self.evaluations = 0
@@ -193,21 +205,38 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
 
     # -- sound phase -------------------------------------------------
 
-    def loudest_source(self, population, fitness, kappa):
-        """For each agent, the agent it hears loudest."""
-        return compute_intensity(population, fitness, kappa).argmax(axis=1)
+    def loudest_source(self, population, fitness, kappa, noisy=False):
+        """For each agent, the agent it hears loudest; or, if ``noisy``, an
+        agent picked at random with chance proportional to how loud it
+        sounds to the power ``focus``."""
+        heard = compute_intensity(population, fitness, kappa)
+        source = heard.argmax(axis=1)
+        if not noisy:
+            return source
+        top = heard[np.arange(len(heard)), source][:, None]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            weight = np.where(top > 0, heard / top, 0.0) ** self.focus
+        total = weight.sum(axis=1)
+        some = total > 0  # an agent that hears nothing keeps the argmax
+        cumulative = np.cumsum(weight[some], axis=1) / total[some, None]
+        draw = self.rng.random(some.sum())[:, None]
+        source[some] = np.minimum((cumulative < draw).sum(axis=1),
+                                  len(heard) - 1)
+        return source
 
     @staticmethod
     def direction(fitness, source):
         """+1 (towards) if the agent heard is better, -1 (away) if not."""
         return np.where(fitness[source] < fitness, 1.0, -1.0)
 
-    def compute_move(self, population, fitness, echoes, step, kappa):
+    def compute_move(self, population, fitness, echoes, step, kappa,
+                     noisy=False):
         """Each agent's move: towards (or away from) the agent it hears
-        loudest, plus a random push, times its step size."""
+        loudest (see ``loudest_source`` for ``noisy``), plus a random push,
+        times its step size."""
         n = len(population)
         rng = self.rng
-        source = self.loudest_source(population, fitness, kappa)
+        source = self.loudest_source(population, fitness, kappa, noisy)
         direction = self.direction(fitness, source)
         towards = direction[:, None] * (population[source] - population)
 
@@ -260,7 +289,9 @@ class SoundSearch:  # pylint: disable=too-many-instance-attributes
             kappa = self.kappa_start + (self.kappa - self.kappa_start) * progress
             size = len(population)
             step, hearing = memory.sample(size, self.rng)
-            move = self.compute_move(population, fitness, echoes, step, kappa)
+            noisy = progress >= self.noisy_after
+            move = self.compute_move(population, fitness, echoes, step,
+                                     kappa, noisy)
             candidate = np.where(self.hearing_mask(hearing),
                                  population + move, population)
             candidate = self.fix_boundary(candidate, population)

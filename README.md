@@ -11,8 +11,8 @@ and Computer Science 36(5): 98–106, 2021.
 [doi:10.9734/JAMCS/2021/v36i530366](https://doi.org/10.9734/JAMCS/2021/v36i530366)
 
 This is version 3, in progress: version 2 plus starting the group again
-when it gets stuck (step 8) and a group that shrinks during the run
-(step 9). The sound model (steps 1–3 below) follows
+when it gets stuck (step 8), a group that shrinks during the run
+(step 9), and hearing that turns less exact after the start (step 10). The sound model (steps 1–3 below) follows
 the paper, with two changes: loudness comes from an agent's place in the
 ranking rather than its raw value, and a loudness exponent `κ` rises
 during the run. The rest was reworked to fix problems found in version 1
@@ -46,13 +46,15 @@ I_{ij} = \frac{P_j^{\kappa}}{4 \pi r_{ij}^2},
 ```
 
 `κ` says how much loudness counts compared with distance. It rises from 1
-to 4 during the run. Early on, an agent mostly hears its near neighbours,
+to 4 during the run (from 0 to 8 on the longer CEC runs, see step 10). Early on, an agent mostly hears its near neighbours,
 so small groups explore different parts of the space. Later, the best
 agents are heard from far away and everyone gathers around them.
 
 ### 3. Move relative to the loudest source
 
-Every agent listens to the source it hears loudest, `k = argmax_j I_ij`.
+Every agent listens to the source it hears loudest, `k = argmax_j I_ij`
+(after the first 10% of the group search, a loud source picked at random;
+see step 10).
 It moves towards that source if the source is fitter and away from it
 otherwise, plus an "ambient" term: the difference between a random agent
 `x_a` and an echo `x_e` (a random current or past position):
@@ -89,7 +91,8 @@ used by L-SHADE, Tanabe & Fukunaga, 2014.)
 
 ### 7. Refinement
 
-The last 30% of the evaluations are spent differently: the group stops,
+The last 30% of the evaluations (10% on the CEC functions) are spent
+differently: the group stops,
 and the best agent keeps improving its own point alone. It tries one random
 step at a time and keeps it if it is no worse. Its steps grow when more
 than about 1 in 5 work and shrink otherwise, and they stretch along the
@@ -135,6 +138,39 @@ A run with `n` agents and `iterations` iterations uses
 `n × (iterations + 1)` function evaluations, the same as one evaluation per
 agent per iteration. `run(evaluations=...)` sets the number exactly.
 
+### 10. Hearing turns less exact
+
+For the first 10% of each group search (`noisy_after`), every agent turns
+to the loudest sound it hears. After that its hearing is less exact: it
+turns towards a source picked at random, with a chance proportional to the
+square of how loud that source sounds (`focus` = 2):
+
+```math
+\Pr(k) = \frac{I_{ik}^{2}}{\sum_j I_{ij}^{2}}
+```
+
+The loudest source is still the most likely choice, but fainter ones are
+picked too.
+
+The two halves do different jobs. Early on, always picking the loudest
+keeps each agent listening to its neighbours. On functions made of several
+blended functions, the group decides which valley it settles in during the
+first few percent of the budget. If agents hear far-off good agents too
+soon, the whole group crowds into one valley, often the wrong one. Later,
+when loudness counts more, nearly every agent hears the same best agent
+loudest, and all of them move along almost the same line. Letting each
+agent pick among the louder sources gives the group more directions to
+try, which helps on functions with many regular valleys, such as
+Rastrigin. Pulling each agent towards a random one of the best few agents,
+rather than the single best, is also what JADE does (Zhang & Sanderson,
+2009); here the choice comes from what each agent hears.
+
+On the CEC functions, whose runs are 7 to 13 times longer, loudness also
+counts from 0 (at first agents go only by distance) up to 8, and the
+refinement gets 10% of the evaluations instead of 30%. The classic
+functions keep `κ` rising from 1 to 4 and 30% refinement: with their short
+runs, the group needs the faster start and the longer refinement.
+
 ## Usage
 
 Requires Python 3 and NumPy.
@@ -145,11 +181,12 @@ python entry.py -i 9 -n 500 --pop 30 --seed 0
 python entry.py -i 5 --kappa 8 --refine 0.2  # change settings
 python entry.py --tune 5 9 10 12 -n 500 --samples 40 --runs 5 --seed 0
 python benchmark.py                          # reproduce the results below
-python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_v3-shrink.json
-python benchmark.py --suite cec2022 --dim 10 --pop 50 --final-pop 50 --stall 0   # version 2
-python benchmark.py --suite cec2017 --dim 10 --runs 10   # design set
-python compare.py results/cec2022_D10_*.json --control v3-shrink
-python compare.py results/cec2022_D10_v3-shrink.json --published  # vs CEC 2022 entries
+python benchmark.py --suite cec2022 --dim 10 --save results/cec2022_D10_v3-noisy.json
+python benchmark.py --suite cec2022 --dim 10 --pop 50 --final-pop 50 --stall 0 \
+    --kappa-start 1 --kappa 4 --refine 0.3 --noisy-after 1   # version 2
+python benchmark.py --suite cec2017 --dim 10 --runs 30   # design set
+python compare.py results/cec2022_D10_*.json --control v3-noisy
+python compare.py results/cec2022_D10_v3-noisy.json --published  # vs CEC 2022 entries
 python -m unittest discover tests
 ```
 
@@ -189,12 +226,15 @@ print(result.best_fitness, result.evaluations)
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `kappa` | 4 | how much loudness counts at the end of the run (starts at 1) |
+| `kappa_start` | 1 | how much loudness counts at the start of each group search |
+| `kappa` | 4 | how much loudness counts at the end of the group search |
 | `refine` | 0.3 | share of evaluations for the final refinement |
 | `archive` | 1.0 | echoes kept, as a multiple of the number of agents |
 | `stall` | 0.1 | start the group again after this share of all evaluations without a real gain (0: never) |
 | `pop_size` | 50 | number of agents at the start |
 | `final_size` | None | agents left at the end of the sound phase; the group shrinks evenly from `pop_size` (None: no shrinking) |
+| `noisy_after` | 0.1 | share of each group search after which agents pick a loud source at random instead of always the loudest (1: never) |
+| `focus` | 2 | how strongly a noisy listener favours louder sources |
 
 ## Results
 
@@ -463,6 +503,40 @@ better (full output in `results/cec2022_D10_v3-shrink_published.txt`).
 Most entries still do better on F4 (Rastrigin), F7, F8 and F10. On F9 it
 ends at 229.3, like most of them.
 
+#### Version 3: hearing turns less exact
+
+Step 10 and the CEC settings (`κ` from 0 to 8, 10% refinement) were
+chosen on CEC 2017 at 10 coordinates. With 30 runs per function
+(`results/cec2017_D10_v3-noisy.json` against
+`results/cec2017_D10_v3-shrink_30runs.json`), they beat steps 8 and 9 alone
+on 11 of 29 functions and lose on 1 (F25, 398 against 388). The Friedman
+and Holm tests find this difference real (adjusted p = 0.005). Mean
+errors on the functions that were weakest: F5 (Rastrigin) 3.95 to 3.32,
+F8 (Rastrigin) 4.84 to 3.35, F10 (Schwefel) 115 to 99, F22 37.7 to 21.1
+and F24 165 to 111 (F10 and F22 are not significant on their own).
+
+On CEC 2022 (`results/cec2022_D10_v3-noisy.json`), step 10 beats steps 8
+and 9 alone on 2 functions and loses on 1. It beats version 2 on 6 and
+loses on none (Holm's adjusted p = 0.04):
+
+| | F2 | F4 | F6 | F7 | F8 | F10 | F12 |
+|---|---|---|---|---|---|---|---|
+| version 2 | 2.82 | 6.43 | 0.108 | 0.176 | 8.32 | 104 | 161 |
+| version 3, step 8 | 0.664 | 5.14 | 0.094 | 0.487 | 5.86 | 100 | 160 |
+| version 3, steps 8 and 9 | **0.399** | 5.14 | **0.0539** | 0.0539 | 2.48 | 97.8 | **159** |
+| version 3, steps 8 to 10 | 0.664 | **3.48** | 0.0981 | **0.0267** | **1.94** | **81.1** | **159** |
+
+F4 (Rastrigin) and F10 improve significantly; F6 gets worse. On F10, 6 of
+30 runs now reach the valley of the best point instead of 1.
+
+Among the competition entries, its average rank is 6.00: 4th of 13 on
+its own, ahead of jSObinexpEig (6.25) and IMPML-SHADE (6.33), behind
+EA4eig (4.08), S-LSHADE-DP (4.29) and NL-SHADE-LBC (5.38). Holm's test
+finds no entry significantly better, and for the first time one entry
+significantly worse: ZOCMAES (adjusted p = 0.047; full output in
+`results/cec2022_D10_v3-noisy_published.txt`). Most entries still do
+better on F4, F7 and F8.
+
 #### Tried and dropped in version 3: choosing between methods
 
 A hyper-heuristic is a top-level method that picks which of several
@@ -482,6 +556,45 @@ was tried on CEC 2017 to choose between listening rules, at three levels:
 The listening rules are too alike, and step size and hearing rate
 already adapt, so there is little left for a top-level method to gain.
 
+#### Tried and dropped in version 3: other changes
+
+These were tested on CEC 2017 at 10 coordinates, on the functions where
+version 3 was weakest: F5 and F8 (Rastrigin, turned), F10 (Schwefel,
+turned), and F22 and F24, which blend several functions. On F22 a run is
+"trapped" when it ends in the valley of the wrong function (error 100).
+Most were checked with 51 runs per function, since 20 runs could not tell
+a trap rate of 35% from 15%.
+
+- **Different settings.** `κ` ending at 2 or 8, `κ` starting at 0, twice
+  as many echoes, 10% refinement, or no restarts: none was better on its
+  own. The settings sit on a plateau.
+- **A floor on the hearing rate.** During a run the hearing rate falls to
+  "one coordinate at a time", even on turned functions, because small
+  one-coordinate moves succeed more often. Keeping it at least 0.7 in the
+  first quarter of the run and 0.6 in the first half, as jSO does (Brest
+  et al., 2017), and letting it recover after reaching 0, helped on F8. But the group settled faster, and F22 was
+  trapped in 20 of 51 runs instead of 14.
+- **Masking.** When the group shrinks, the agent most drowned out by a
+  fitter agent nearby leaves, instead of the worst agent. This keeps
+  lone explorers, but it was worse on 6 of 8 functions and did not reduce
+  traps. A trace showed why: on F22 the group picks its valley in the first
+  3–6% of the budget, long before shrinking matters.
+- **Hearing like people** (suggested by the author). Each agent had its
+  own ears (its own `κ`); hearing faded with age, so older agents heard only
+  nearby agents; young agents did not listen at all; and at the end of its
+  life an agent was replaced by its child at the same spot. A version where
+  no agent listens for the first few percent of the run was also tried.
+  Each part moved the search the expected way (fewer traps, less exact
+  fine-tuning), but none was better than version 3 (ageing and the full
+  life cycle were checked over 51 runs). Step 10 keeps one part of the
+  idea: hearing that becomes less exact as the run goes on.
+- **Less exact hearing from the start.** Picking a source at random in
+  proportion to its loudness from the very start helped Rastrigin a lot
+  (F5 3.3 against 4.1), but F22 was trapped in 36 of 51 runs. Waiting
+  until 10% of the run (step 10) keeps the gain without the traps; waiting
+  until 30% loses the gain. With `focus` 1 instead of 2, F7 (Lunacek's
+  double Rastrigin) got worse.
+
 ### Strengths and weaknesses
 
 **Strengths:** the low-dimensional functions with several valleys (f14–f23:
@@ -500,7 +613,8 @@ and the noisy quartic (f7), which is worse than in version 1.
   (plain, moved and turned) and, from version 3 on, on CEC 2017 (Awad et
   al., 2016), so those results are somewhat optimistic. The CEC 2022
   results are free of this, but so far only at 10 coordinates. The start
-  of 18 agents per coordinate has been tested only at 10 coordinates.
+  of 18 agents per coordinate, and the CEC settings of step 10 (`κ` from 0
+  to 8, 10% refinement), have been tested only at 10 coordinates.
 - The CEC 2022 code has not been run side by side with the organisers'
   code. It is checked at each function's best point and against the
   values in the entries' results (above).
@@ -558,6 +672,10 @@ version 3 uses it (step 9).
   method and influence of parameter tuning. *Swarm and Evolutionary
   Computation*, 89, 101623.
   [doi:10.1016/j.swevo.2024.101623](https://doi.org/10.1016/j.swevo.2024.101623)
+- Brest, J., Sepesy Maučec, M. & Bošković, B. (2017). Single objective
+  real-parameter optimization: Algorithm jSO. *2017 IEEE Congress on
+  Evolutionary Computation*, 1311–1318.
+  [doi:10.1109/CEC.2017.7969456](https://doi.org/10.1109/CEC.2017.7969456)
 - Burke, E. K., Kendall, G. & Soubeiga, E. (2003). A tabu-search
   hyperheuristic for timetabling and rostering. *Journal of Heuristics*,
   9(6), 451–470.

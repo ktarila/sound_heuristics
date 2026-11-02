@@ -28,6 +28,11 @@ ARCHIVE = 1.0
 # Start the group again (keeping the best point) when its best value has
 # not really improved for this share of all evaluations. 0: never.
 STALL = 0.1  # chosen on the moved and turned classic functions, 30 coordinates
+# Share of each group search after which agents stop always turning to the
+# loudest source and pick one at random, with chance proportional to its
+# loudness to the power FOCUS. 1: never.
+NOISY_AFTER = 0.1
+FOCUS = 2.0
 # Agents left when the group search ends: the group shrinks evenly from
 # POP_SIZE to this, dropping its worst agents (Tanabe & Fukunaga, 2014).
 # None: no shrinking. It helps only when the group starts large (about
