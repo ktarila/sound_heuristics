@@ -1,0 +1,53 @@
+cec2017, 10 coordinates; 30 runs; 100000 evaluations per run
+Mean error; +/-/= : v3-noisy significantly better / worse / no different (Wilcoxon rank-sum, 5% level)
+
+F          v3-noisy  de-rule-0.11       firefly   ratio-whole   ratio-coord
+F1                0           0 =           0 =           0 =           0 =
+F3                0           0 =           0 =           0 =           0 =
+F4                0           0 =           0 =           0 =           0 =
+F5             3.32        2.29 -        2.82 -        3.48 =        5.37 +
+F6                0           0 =           0 =    4.74e-08 =           0 =
+F7             8.62        12.1 +        12.2 +        12.3 +        10.4 =
+F8             3.35        2.59 -        2.52 -        3.42 =        5.97 +
+F9                0           0 =           0 =           0 =     0.00298 =
+F10              99        43.3 -        56.4 -        64.9 =         160 +
+F11           0.365           0 -           0 -       0.166 =        1.33 +
+F12           0.139        20.9 +        4.94 +        4.42 =        6.48 +
+F13            1.99        2.63 =        2.74 =        1.65 =        3.34 +
+F14           0.411       0.327 =       0.374 =       0.539 =        1.59 +
+F15          0.0941       0.112 =        0.16 =      0.0564 =       0.763 +
+F16           0.506       0.428 =       0.519 =       0.388 =       0.757 +
+F17           0.243       0.216 =       0.183 =       0.187 =       0.781 +
+F18         0.00759        0.22 +        0.14 +      0.0371 =       0.291 +
+F19          0.0169     0.00788 -       0.015 =      0.0141 =      0.0418 +
+F20        5.61e-09      0.0104 =    9.45e-09 =      0.0312 =    1.84e-05 =
+F21             100         148 +         128 +         104 =         100 =
+F22            21.1        93.3 +        91.4 +          76 +        25.3 =
+F23             305         303 -         304 -         304 -         307 +
+F24             111         269 +         243 +         173 +         127 =
+F25             398         409 =         407 +         398 =         398 =
+F26             291         287 =         290 =         270 =         291 =
+F27             389         389 +         389 +         389 =         389 =
+F28             290         300 =         300 =         300 =         300 =
+F29             238         234 -         237 =         236 =         244 +
+F30             395         395 =         395 -         395 =         808 +
+
+v3-noisy better / worse / no different:
+  vs de-rule-0.11    7 /  7 / 15
+  vs firefly         8 /  6 / 15
+  vs ratio-whole     3 /  1 / 25
+  vs ratio-coord    15 /  0 / 14
+
+Friedman test on mean errors (average rank, 1 = best):
+  v3-noisy       2.67
+  ratio-whole    2.72
+  firefly        2.84
+  de-rule-0.11   2.90
+  ratio-coord    3.86
+  statistic 13.25, p-value 0.0101
+
+Holm's comparison with v3-noisy (adjusted p-value below the level means a real difference):
+  ratio-coord    ranks worse than v3-noisy; p = 0.00417, adjusted p = 0.0167
+  de-rule-0.11   ranks worse than v3-noisy; p = 0.589, adjusted p = 1
+  firefly        ranks worse than v3-noisy; p = 0.678, adjusted p = 1
+  ratio-whole    ranks worse than v3-noisy; p = 0.901, adjusted p = 1

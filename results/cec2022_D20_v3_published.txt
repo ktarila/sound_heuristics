@@ -1,0 +1,60 @@
+cec2022, 20 coordinates; 30 runs; 1000000 evaluations per run
+Mean error; +/-/= : v3 significantly better / worse / no different (Wilcoxon rank-sum, 5% level)
+
+F                    v3            EA4eig      NL-SHADE-LBC  NL-SHADE-RSP-MID       S-LSHADE-DP      jSObinexpEig         MTT-SHADE       IMPML-SHADE     SPHH-Ensemble           Co-PPSO           OMCSOMA         NLSOMACLP           ZOCMAES
+F1                    0               0 =               0 =               0 =               0 =               0 =               0 =        3.61e-08 +        2.73e+10 +               0 =            75.2 =               0 =        4.67e-07 +
+F2                  1.5            1.06 +            47.3 +            8.93 +           0.403 =              45 +            48.1 +            2.55 +             182 +            16.6 +            44.5 +            35.3 +            31.3 +
+F3                    0               0 =               0 =               0 =               0 =               0 =        1.06e-08 =        4.14e-05 +           0.122 +        6.48e-05 +               0 =               0 =          0.0501 +
+F4                 11.5            8.69 -            4.45 -            27.9 +            13.4 +            8.92 -            8.52 -             7.6 -            34.6 +            19.2 +            28.7 +              30 +            20.6 +
+F5                    0               0 =               0 =             147 +         0.00298 =               0 =               0 =               0 =        2.91e+03 +           0.536 +          0.0119 +          0.0631 +         0.00298 =
+F6                0.371           0.149 -           0.636 =            6.35 +            2.14 +          0.0987 -            1.61 +            24.2 +        5.52e+08 +        5.59e+03 +             630 +              41 +            41.6 +
+F7                 13.3             3.5 -            2.58 -            11.6 =            13.1 =             5.4 -            12.6 =            14.4 =            24.3 +            29.6 +            5.15 -            8.28 -            95.3 +
+F8                 19.2            16.6 =            16.5 =              20 =            18.7 +            15.3 =            20.5 +            18.3 =        9.05e+05 +            21.8 +            21.3 +            20.8 +            54.9 +
+F9                  181             165 -             181 =             181 =             181 =             181 =             181 =             181 =        3.25e+03 +             180 -             181 =             181 =             181 -
+F10                26.8             108 +             100 +         0.00208 -               0 -             100 +             100 +            8.12 +             353 +             117 +            13.7 +           0.223 +             734 +
+F11                  10             323 +             303 +             150 +              30 =             307 +             307 +            2.41 +        1.97e+04 +             313 +        8.92e-05 +           0.338 =             297 +
+F12                 232             200 -             239 +             243 +             234 +             231 -             236 +             232 =        1.36e+03 +             196 -             239 +             236 +             248 +
+
+v3 better / worse / no different:
+  vs EA4eig              3 /  5 /  4
+  vs NL-SHADE-LBC        4 /  2 /  6
+  vs NL-SHADE-RSP-MID    6 /  1 /  5
+  vs S-LSHADE-DP         4 /  1 /  7
+  vs jSObinexpEig        3 /  4 /  5
+  vs MTT-SHADE           6 /  1 /  5
+  vs IMPML-SHADE         6 /  1 /  5
+  vs SPHH-Ensemble      12 /  0 /  0
+  vs Co-PPSO             9 /  2 /  1
+  vs OMCSOMA             8 /  1 /  3
+  vs NLSOMACLP           7 /  1 /  4
+  vs ZOCMAES            10 /  1 /  1
+
+Friedman test on mean errors (average rank, 1 = best):
+  EA4eig             4.25
+  v3                 5.17
+  jSObinexpEig       5.21
+  S-LSHADE-DP        5.29
+  NL-SHADE-LBC       5.42
+  IMPML-SHADE        5.96
+  NL-SHADE-RSP-MID   6.96
+  NLSOMACLP          6.96
+  MTT-SHADE          7.17
+  OMCSOMA            7.71
+  Co-PPSO            8.42
+  ZOCMAES            9.75
+  SPHH-Ensemble      12.75
+  statistic 55.02, p-value 1.79e-07
+
+Holm's comparison with v3 (adjusted p-value below the level means a real difference):
+  SPHH-Ensemble      ranks worse than v3; p = 1.85e-06, adjusted p = 2.21e-05
+  ZOCMAES            ranks worse than v3; p = 0.00394, adjusted p = 0.0434
+  Co-PPSO            ranks worse than v3; p = 0.0409, adjusted p = 0.409
+  OMCSOMA            ranks worse than v3; p = 0.11, adjusted p = 0.989
+  MTT-SHADE          ranks worse than v3; p = 0.208, adjusted p = 1
+  NL-SHADE-RSP-MID   ranks worse than v3; p = 0.26, adjusted p = 1
+  NLSOMACLP          ranks worse than v3; p = 0.26, adjusted p = 1
+  EA4eig             ranks better than v3; p = 0.564, adjusted p = 1
+  IMPML-SHADE        ranks worse than v3; p = 0.619, adjusted p = 1
+  NL-SHADE-LBC       ranks worse than v3; p = 0.875, adjusted p = 1
+  S-LSHADE-DP        ranks worse than v3; p = 0.937, adjusted p = 1
+  jSObinexpEig       ranks worse than v3; p = 0.979, adjusted p = 1

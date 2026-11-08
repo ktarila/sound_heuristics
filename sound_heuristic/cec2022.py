@@ -2,9 +2,10 @@
 
 Written from the competition definitions, following the organisers'
 Python code and its known quirks (marked "as in the official code").
-Checked at each function's best point, and against the competition
-entries' published results: the values where runs get stuck agree to
-5-8 digits. The data
+Checked side by side with the organisers' C code (cec22_test_func.cpp) on
+1,800-4,500 points per function at 10 and 20 coordinates: all 12 agree to
+about one part in 10^12. The values where runs get stuck also agree with
+the competition entries' published results to 5-8 digits. The data
 files (shifts, rotations, shuffles) are downloaded from the organisers'
 GitHub on first use and are not included here: that repository has no
 license.

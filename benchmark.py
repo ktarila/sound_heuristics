@@ -6,6 +6,8 @@
     python benchmark.py --ablate random      # listen to a random agent instead
     python benchmark.py --ablate towards     # never move away from an agent
     python benchmark.py --ablate pbest       # differential evolution's rule
+    python benchmark.py --ablate firefly     # the firefly rule (also ratio-whole,
+                                             # ratio-coord: fitness-distance ratio)
     python benchmark.py --refine 0 --kappa 1 # switch parts off
     python benchmark.py --suite cec2022 --dim 10 --save results/sound.json
     python benchmark.py --suite cec2017 --dim 10 --runs 10
@@ -31,7 +33,7 @@ import numpy as np
 from sound_heuristic import cec2017, cec2022
 from sound_heuristic import config as cfg
 from sound_heuristic import fitness
-from sound_heuristic.solution import SoundSearch
+from sound_heuristic.solution import SoundSearch, pairwise_sq_distances
 
 # Average results published by Mirjalili et al. (2014), Grey Wolf
 # Optimizer, Advances in Engineering Software 69, 46-61.
@@ -115,10 +117,105 @@ class BestFewShrinking(BestFewSource):
         return 0.25 - 0.125 * progress
 
 
+# Rules of the sound model's closest relatives, in place of listening.
+# Only whom each agent moves towards changes, as with BestFewSource; none of
+# these rules uses loudness or the kappa ramp, and all always move towards.
+# - Firefly: the firefly algorithm (Yang, 2009). One brighter agent per move,
+#   picked with a chance proportional to exp(-gamma r^2), with gamma one over
+#   the mean squared distance between agents.
+# - RatioCoordinate: fitness-distance ratio (Peram, Veeramachaneni & Mohan,
+#   2003). For each coordinate d, the better agent j with the largest
+#   (f_i - f_j) / |x_jd - x_id|.
+# - RatioWhole: the same ratio with the whole distance, one agent per move.
+# An agent with no better agent (the best one) gets no pull, only the push.
+
+
+class _Towards(SoundSearch):
+    """Always towards the agent picked."""
+
+    @staticmethod
+    def direction(fitness, source):
+        return np.ones(len(fitness))
+
+
+class Firefly(_Towards):
+    """One brighter agent per move, chance proportional to exp(-gamma r^2)."""
+
+    def loudest_source(self, population, fitness, kappa, noisy=False):
+        n = len(population)
+        sq = pairwise_sq_distances(population)
+        source = np.arange(n)
+        brighter = fitness[None, :] < fitness[:, None]
+        some = brighter.any(axis=1)
+        if not some.any():
+            return source
+        scale = sq.sum() / (n * (n - 1))
+        rows = sq[some]
+        if scale > 0:
+            # subtract each row's nearest brighter distance so exp never
+            # underflows to all zeros
+            near = np.where(brighter[some], rows, np.inf).min(axis=1)
+            weight = np.where(brighter[some],
+                              np.exp(-(rows - near[:, None]) / scale), 0.0)
+        else:
+            weight = brighter[some].astype(float)
+        cumulative = np.cumsum(weight, axis=1) / weight.sum(axis=1)[:, None]
+        draw = self.rng.random(some.sum())[:, None]
+        source[some] = np.minimum((cumulative < draw).sum(axis=1), n - 1)
+        return source
+
+
+class RatioWhole(_Towards):
+    """The better agent with the largest gain per unit of distance."""
+
+    def loudest_source(self, population, fitness, kappa, noisy=False):
+        n = len(population)
+        dist = np.sqrt(pairwise_sq_distances(population))
+        gain = fitness[:, None] - fitness[None, :]
+        ok = (gain > 0) & (dist > 0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio = np.where(ok, gain / dist, -np.inf)
+        source = ratio.argmax(axis=1)
+        return np.where(ok.any(axis=1), source, np.arange(n))
+
+
+class RatioCoordinate(_Towards):
+    """Per coordinate, the better agent with the largest gain per unit of
+    distance along that coordinate."""
+
+    def compute_move(self, population, fitness, echoes, step, kappa,
+                     noisy=False):
+        n, dim = population.shape
+        rng = self.rng
+        gain = fitness[:, None] - fitness[None, :]                 # (i, j)
+        gap = np.abs(population[None, :, :] - population[:, None, :])  # (i, j, d)
+        ok = (gain[:, :, None] > 0) & (gap > 0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio = np.where(ok, gain[:, :, None] / gap, -np.inf)
+        source = ratio.argmax(axis=1)                              # (i, d)
+        source = np.where(ok.any(axis=1), source, np.arange(n)[:, None])
+        towards = population[source, np.arange(dim)[None, :]] - population
+
+        # random push: as in SoundSearch.compute_move
+        agents = np.arange(n)
+        first = rng.integers(0, n - 1, n)
+        first += first >= agents
+        pool = np.vstack([population, echoes])
+        second = rng.integers(0, len(pool), n)
+        clash = (second == agents) | (second == first)
+        while clash.any():
+            second[clash] = rng.integers(0, len(pool), clash.sum())
+            clash = (second == agents) | (second == first)
+        ambient = population[first] - pool[second]
+        return step[:, None] * (towards + ambient)
+
+
 CEC = {"cec2022": cec2022, "cec2017": cec2017}
 ALGORITHMS = {"none": SoundSearch, "random": RandomSource,
               "nearest": NearestSource, "towards": TowardsOnly,
-              "pbest": BestFewSource, "pbest-jso": BestFewShrinking}
+              "pbest": BestFewSource, "pbest-jso": BestFewShrinking,
+              "firefly": Firefly, "ratio-whole": RatioWhole,
+              "ratio-coord": RatioCoordinate}
 
 
 def transformed(index, suite, dim=10):
