@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound Intensity Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap">
+<meta name="description" content="Three versions of the sound intensity search looking for the lowest point of 64 test functions (CEC 2022, CEC 2017 and the classic 23), with the history of each function and what the method does well and where it is limited.">
+<style>
+:root {
+  --bg: #ffffff; --surface: #f4f5f7; --surface2: #e8eaee; --ink: #111827; --muted: #5b6472;
+  --line: #e3e6ea; --on-ink: #ffffff; --page: #ffffff; --desk: #e9ebef;
+  --v1: #64748b; --v2: #2563eb; --v3: #ea580c;
+  --good: #15803d; --bad: #b91c1c;
+  --sidebar: 296px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1015; --surface: #171b22; --surface2: #232935; --ink: #e9ebef; --muted: #98a2b3;
+    --line: #272d38; --on-ink: #0d1015; --page: #161a21; --desk: #0a0c10;
+    --v1: #94a3b8; --v2: #60a5fa; --v3: #fb923c; --good: #4ade80; --bad: #f87171;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1015; --surface: #171b22; --surface2: #232935; --ink: #e9ebef; --muted: #98a2b3;
+  --line: #272d38; --on-ink: #0d1015; --page: #161a21; --desk: #0a0c10;
+  --v1: #94a3b8; --v2: #60a5fa; --v3: #fb923c; --good: #4ade80; --bad: #f87171;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light dark; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--ink); text-underline-offset: 3px; }
+h1 { font-size: clamp(2rem, 4.2vw, 3rem); line-height: 1.1; letter-spacing: -0.025em; margin: 6px 0 14px; font-weight: 750; }
+h2 { font-size: 1.5rem; letter-spacing: -0.015em; margin: 56px 0 12px; font-weight: 700; }
+h3 { font-size: 1.05rem; margin: 0 0 6px; font-weight: 650; }
+p { margin: 0 0 14px; max-width: 70ch; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; max-width: 70ch; }
+li { margin-bottom: 8px; }
+.label { font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 650; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; }
+.muted { color: var(--muted); }
+code { font: 0.88em ui-monospace, Menlo, Consolas, monospace; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+
+/* layout: the sidebar is fixed to the window and scrolls on its own */
+.shell { min-height: 100vh; }
+#side { background: var(--surface); padding: 22px 14px 28px; position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar);
+  overflow-y: auto; overscroll-behavior: contain; z-index: 5; }
+main { margin-left: var(--sidebar); padding: 36px clamp(16px, 4vw, 56px) 80px; max-width: calc(1240px + var(--sidebar)); outline: none; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: -0.01em; margin: 0 8px 18px; font-size: 1.05rem; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; font-size: 0.8rem; }
+#side nav a { display: flex; gap: 10px; align-items: baseline; padding: 5px 10px; border-radius: 8px; text-decoration: none;
+  color: var(--ink); font-size: 0.92rem; margin-bottom: 1px; }
+#side nav a:hover { background: var(--surface2); }
+#side nav a[aria-current="page"] { background: var(--ink); color: var(--on-ink); }
+#side nav a .n { min-width: 2.4em; font-variant-numeric: tabular-nums; opacity: 0.65; font-size: 0.8rem; }
+#side .label { display: block; margin: 18px 10px 6px; }
+#side .sub { margin: 10px 10px 3px; font-size: 0.78rem; color: var(--muted); }
+#side details { margin: 4px 0; }
+#side summary { cursor: pointer; padding: 7px 10px; border-radius: 8px; font-weight: 650; font-size: 0.94rem; list-style: none; display: flex; justify-content: space-between; align-items: baseline; }
+#side summary::-webkit-details-marker { display: none; }
+#side summary:hover { background: var(--surface2); }
+#side summary .count { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+#side summary::before { content: "▸"; margin-right: 8px; color: var(--muted); }
+#side details[open] > summary::before { content: "▾"; }
+#side summary { justify-content: flex-start; gap: 0; }
+#side summary .count { margin-left: auto; }
+.getcode { margin: 0 8px 16px; display: grid; gap: 8px; }
+.getcode a.btn { text-decoration: none; text-align: center; display: block; }
+.getcode a.zip { font-size: 0.84rem; color: var(--muted); text-align: center; }
+.topbar { display: none; }
+.scrim { display: none; }
+
+/* flat components */
+.btn { font: inherit; font-size: 0.92rem; color: var(--ink); background: var(--surface2); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.btn:hover { background: var(--line); }
+.btn.primary { background: var(--ink); color: var(--on-ink); font-weight: 650; min-width: 98px; }
+.btn.primary:hover { opacity: 0.88; }
+select { font: inherit; font-size: 0.92rem; color: var(--ink); background: var(--surface2); border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--v2); outline-offset: 2px; }
+main:focus, main:focus-visible { outline: none; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 18px 0; }
+.tile { background: var(--surface); border-radius: 12px; padding: 16px 18px; }
+.tile .big { font-size: 1.75rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.tile .small { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+.card { background: var(--surface); border-radius: 12px; padding: 20px 22px; }
+.card.link { display: block; text-decoration: none; }
+.card.link:hover { background: var(--surface2); }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.crumb { color: var(--muted); font-size: 0.9rem; }
+.crumb a { color: var(--muted); }
+.pill { display: inline-block; font-size: 0.78rem; font-weight: 650; padding: 2px 10px; border-radius: 999px; background: var(--surface2); margin-left: 6px; vertical-align: 2px; }
+.pill.solved { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; }
+.bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 10px 0 4px; font-size: 0.74rem; color: #fff; }
+.bar span { display: grid; place-items: center; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.part { display: grid; grid-template-columns: 200px 1fr; gap: 4px 18px; padding: 12px 0; border-top: 1px solid var(--line); }
+.part:first-child { border-top: 0; padding-top: 0; }
+.part:last-child { padding-bottom: 0; }
+.part .what { font-weight: 650; }
+.part .share { color: var(--muted); font-size: 0.86rem; }
+.part p { margin: 0 0 4px; font-size: 0.94rem; }
+.part .src { color: var(--muted); font-size: 0.84rem; }
+
+/* viewer */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+.slider { flex: 1 1 260px; display: flex; gap: 12px; align-items: center; min-width: 220px; }
+.slider input { flex: 1; accent-color: var(--ink); }
+.evals { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 12ch; text-align: right; font-size: 0.92rem; }
+.opt { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.88rem; }
+.panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.panel { background: var(--surface); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.panel .head { padding: 14px 16px 0; }
+.panel h3 { display: flex; align-items: center; gap: 8px; }
+.panel .tag { color: var(--muted); font-size: 0.88rem; margin: 2px 0 6px; }
+.panel ul { margin: 0 0 4px; padding-left: 18px; font-size: 0.88rem; }
+.panel li { margin-bottom: 3px; }
+.panel .more { font-size: 0.86rem; display: inline-block; margin: 2px 0 4px; }
+.plot3d { height: 340px; margin-top: auto; }
+.status { padding: 10px 16px 14px; font-size: 0.9rem; font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 8px; }
+.chart { background: var(--surface); border-radius: 12px; padding: 14px 12px 6px; margin: 12px 0; }
+.chart h3 { margin: 0 6px; }
+.plot2d { height: 320px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--muted); margin: 10px 0; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.note { color: var(--muted); font-size: 0.9rem; }
+
+/* tables */
+.tablewrap { overflow-x: auto; border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { padding: 10px 14px; text-align: right; }
+th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 650; }
+th:nth-child(-n+2), td:nth-child(-n+2) { text-align: left; }
+tbody tr { border-top: 1px solid var(--line); }
+tbody tr.link { cursor: pointer; }
+tbody tr.link:hover { background: var(--surface2); }
+tbody tr.head td { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 650; background: var(--surface2); cursor: default; }
+td.num { font-variant-numeric: tabular-nums; }
+table.left th, table.left td { text-align: left; }
+.solved { color: var(--good); font-weight: 650; }
+.better { color: var(--good); font-weight: 650; }
+.worse { color: var(--bad); font-weight: 650; }
+.pager { display: flex; justify-content: space-between; margin-top: 48px; gap: 12px; }
+.pager a { background: var(--surface); border-radius: 12px; padding: 14px 18px; text-decoration: none; flex: 1; }
+.pager a:hover { background: var(--surface2); }
+.pager .next { text-align: right; }
+.fail { background: var(--surface2); border-radius: 8px; padding: 12px 14px; margin: 12px 0; }
+
+/* tried and did not work: laid out as a research document on a page */
+body.doc { background: var(--desk); }
+sup.ord, sup.pow { font-size: 0.68em; line-height: 0; vertical-align: 0.5em; margin-left: 0.04em; }
+.paper .katex { font-size: 1.06em; }
+.paper .katex-display { margin: 0.7em 0; overflow-x: auto; overflow-y: hidden; }
+/* pseudocode, ruled like the tables */
+.paper .algo { border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); padding: 0 0 0.5em; font-size: 0.9em; line-height: 1.5; }
+.paper .algo figcaption { font-size: 1em; padding: 0.45em 0; margin: 0 0 0.45em; border-bottom: 0.75px solid var(--ink); }
+.paper .algo p { text-indent: 0; text-align: left; hyphens: none; }
+.paper .algo .io { margin: 0 0 0.35em; }
+.paper .algo ol { list-style: none; margin: 0; padding: 0; }
+.paper .algo li { display: flex; align-items: baseline; gap: 0.5em; margin: 0; padding: 1px 0; text-align: left; hyphens: none; }
+.paper .algo li.enc { background: color-mix(in srgb, var(--v2) 7%, transparent); }
+.paper .algo .ln { flex: none; width: 1.7em; text-align: right; color: var(--muted); font-size: 0.85em; font-variant-numeric: tabular-nums; }
+.paper .algo .mk { flex: none; width: 0.7em; color: var(--v2); font-weight: 700; }
+.paper .algo .code { flex: 1 1 auto; min-width: 0; padding-left: calc(var(--d) * 1.4em); }
+.paper .algo .cm { flex: 0 1 36%; color: var(--muted); font-style: italic; text-align: right; padding-right: 0.3em; }
+.paper .algo .settings { border-top: 0.75px solid var(--ink); margin: 0.5em 0 0; padding-top: 0.45em; font-size: 0.95em; }
+@media (max-width: 700px) {
+  .paper .algo li { display: grid; grid-template-columns: 1.5em 0.7em minmax(0, 1fr); column-gap: 0.4em; }
+  .paper .algo .code { padding-left: calc(var(--d) * 0.8em); }
+  .paper .algo .cm { grid-column: 3; text-align: left; padding: 0 0 0.15em calc(var(--d) * 0.8em); }
+}
+body.doc { --pfont: "Source Serif 4", Charter, "Bitstream Charter", Georgia, "Times New Roman", serif; --sheet-shadow: 0 1px 3px rgba(0,0,0,.05), 0 12px 32px rgba(0,0,0,.06); }
+.paper {
+  background: var(--page); border: 1px solid var(--line); box-shadow: var(--sheet-shadow);
+  max-width: 1080px; margin: 0 auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 3.5vw, 64px); font: 17px/1.55 var(--pfont); }
+.paper p, .paper ul, .paper ol, .paper li { max-width: none; }
+.paper p { margin: 0; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+.paper p + p { text-indent: 1.5em; }
+.paper ul { margin: 0.5em 0 0.7em; padding-left: 1.6em; }
+.paper li { margin: 0 0 0.3em; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+.paper a { color: inherit; }
+.paper sup { line-height: 0; }
+.paper .ptitle { text-align: center; margin: 0 0 2.4em; }
+.paper .ptitle p { text-align: center; text-indent: 0; }
+.paper .kind { font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 1em; }
+.paper h1 { font: 700 clamp(1.5rem, 3vw, 2.05rem)/1.22 var(--pfont); letter-spacing: 0; margin: 0 auto 0.75em; max-width: 24em; }
+.paper .byline { color: var(--muted); }
+.paper h2 { font: 700 1.28rem/1.3 var(--pfont); letter-spacing: 0; margin: 2.2em 0 0.7em; }
+.paper h3.sub { font: 700 1.05rem/1.35 var(--pfont); letter-spacing: 0; margin: 1.7em 0 0.5em; }
+.paper .no { display: inline-block; min-width: 2.1em; }
+.paper h3.sub .no { min-width: 2.6em; }
+.paper [id] { scroll-margin-top: 70px; }
+@media (min-width: 1360px) { .paper [id] { scroll-margin-top: 20px; } }
+.paper a.xref, .paper a.cite { color: var(--v2); text-decoration: none; }
+.paper a.xref:hover, .paper a.cite:hover { text-decoration: underline; }
+.paper .hit { animation: hit 1.8s ease-out; }
+@keyframes hit { 0%, 35% { background-color: color-mix(in srgb, var(--v2) 16%, transparent); } 100% { background-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .paper .hit { animation: none; outline: 2px solid var(--v2); outline-offset: 2px; } }
+@media (max-width: 960px) { .paper [id] { scroll-margin-top: 124px; } }
+.paper .abstract { margin: 0 0 2.2em; }
+.paper .abstract h2 { text-align: center; font-size: 1rem; margin: 0 0 0.5em; }
+.paper .abstract p { font-size: 0.94em; }
+.paper .abstract .kw { margin-top: 0.8em; text-indent: 0; text-align: left; }
+.paper dl.defs { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25em 1.2em; margin: 0.6em 0 0 1.5em; }
+.paper dl.defs dt { font-style: italic; }
+.paper dl.defs dd { margin: 0; }
+.paper .when { font-style: italic; color: var(--muted); text-indent: 0; margin: 0 0 0.6em; font-size: 0.94em; text-align: left; }
+.paper .when + p { text-indent: 0; }
+.paper .refs { list-style: none; padding: 0; }
+.paper .refs li { padding-left: 2em; text-indent: -2em; margin: 0 0 0.45em; font-size: 0.92em; text-align: left; }
+.paper .refs a { overflow-wrap: anywhere; }
+.paper .refs details.why { text-indent: 0; margin: 0.25em 0 0.5em; font-size: 0.95em; }
+.paper .refs details.why summary { cursor: pointer; color: var(--v2); font-size: 0.92em; list-style: none; }
+.paper .refs details.why summary::-webkit-details-marker { display: none; }
+.paper .refs details.why summary::before { content: "▸ "; }
+.paper .refs details.why[open] summary::before { content: "▾ "; }
+.paper .refs details.why[open] { background: var(--surface); padding: 0.4em 0.8em 0.2em; margin-right: 0; }
+.cite-pop { position: fixed; z-index: 60; width: min(480px, calc(100vw - 24px)); overflow-y: auto; overscroll-behavior: contain; background: var(--page); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: var(--sheet-shadow), 0 10px 28px rgba(0,0,0,.14); padding: 12px 16px 10px; font: 0.86rem/1.45 var(--pfont); }
+.cite-pop[hidden] { display: none; }
+.cite-pop .ev-ref { font-weight: 600; margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.ev-item { margin: 0 0 9px; }
+.ev-for { font-size: 0.86em; color: var(--muted); font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.03em; }
+.ev-q { margin: 2px 0 2px; padding: 1px 0 1px 10px; border-left: 2px solid var(--v2); }
+pre.ev-q.code { font: 0.78em/1.45 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); padding: 6px 8px; border-left: 2px solid var(--v2); }
+.ev-src { font-size: 0.82em; color: var(--muted); font-style: italic; }
+.ev-note { font-size: 0.86em; margin: 4px 0 6px; text-indent: 0; text-align: left; }
+.paper .ev-note, .paper .ev-check, .cite-pop .ev-note, .cite-pop .ev-check { text-indent: 0; }
+.ev-check { font-size: 0.8em; color: var(--muted); margin: 6px 0 2px; text-indent: 0; text-align: left; border-top: 1px dashed var(--line); padding-top: 5px; }
+.after-doc { margin: 18px 0 0; text-align: right; }
+/* contents panel: a sheet like the paper; a sticky column beside it on wide screens, a sticky bar above it otherwise */
+body.doc main { padding-left: 24px; padding-right: 24px; }
+.doc-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.doc-wrap > * { min-width: 0; }
+.doc-wrap > .paper { width: 100%; }
+.doc-toc { position: sticky; top: 12px; z-index: 8; background: var(--page); border: 1px solid var(--line); box-shadow: var(--sheet-shadow);
+  font: 0.94rem/1.4 var(--pfont); }
+.toc-head { display: none; }
+.toc-toggle { display: flex; width: 100%; gap: 12px; align-items: baseline; font: inherit; font-weight: 700; color: var(--ink); background: none; border: 0;
+  padding: 12px 18px; cursor: pointer; text-align: left; }
+.toc-toggle::after { content: "▾"; margin-left: auto; color: var(--muted); font-weight: 400; }
+.doc-toc.open .toc-toggle::after { content: "▴"; }
+.toc-toggle .now { font-weight: 400; font-style: italic; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.toc-list { display: none; border-top: 1px solid var(--line); padding: 10px 10px 16px; max-height: min(70vh, 640px); overflow-y: auto; overscroll-behavior: contain; }
+.doc-toc.open .toc-list { display: block; }
+.toc-list a { display: flex; gap: 10px; padding: 4px 10px; text-decoration: none; color: var(--ink); border-left: 2px solid transparent; }
+.toc-list a .n { min-width: 1.6em; flex: none; font-variant-numeric: tabular-nums; color: var(--muted); }
+.toc-list a:not(.l2) { font-weight: 600; margin-top: 8px; }
+.toc-list a:first-child { margin-top: 0; }
+.toc-list a.l2 { padding-left: 20px; color: var(--muted); font-size: 0.93em; }
+.toc-list a.l2 .n { min-width: 2.3em; }
+.toc-list a:hover { color: var(--ink); background: var(--surface); }
+.toc-list a[aria-current="location"] { color: var(--ink); border-left-color: var(--v2); background: color-mix(in srgb, var(--v2) 9%, transparent); }
+@media (min-width: 1360px) {
+  .doc-wrap { grid-template-columns: minmax(0, 1fr) clamp(290px, 21vw, 340px); gap: 24px; }
+  .doc-wrap .paper { grid-column: 1; grid-row: 1; }
+  .doc-toc { grid-column: 2; grid-row: 1; top: 24px; display: flex; flex-direction: column; max-height: calc(100vh - 48px); }
+  .toc-toggle { display: none; }
+  .toc-head { display: block; padding: 20px 20px 12px; font-weight: 700; font-size: 1.08rem; border-bottom: 1px solid var(--line); }
+  .toc-list { display: block; border-top: 0; max-height: none; flex: 1 1 auto; min-height: 0; padding: 12px 10px 18px; }
+}
+@media (max-width: 960px) { .doc-toc { top: 64px; } body.doc main { padding-left: 16px; padding-right: 16px; } }
+/* tables with three rules, as in printed papers */
+.paper .rfig { margin: 1.4em 0 1.7em; }
+.paper .rfig figcaption { font-size: 0.88em; color: var(--ink); margin: 0 0 0.6em; text-align: justify; hyphens: auto; }
+.paper .tablewrap { background: none; border-radius: 0; }
+.paper table { font: inherit; font-size: 0.86em; line-height: 1.4; border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
+.paper th { font: 600 1em/1.35 var(--pfont); text-transform: none; letter-spacing: 0; color: var(--ink); border-bottom: 0.75px solid var(--ink); vertical-align: bottom; }
+.paper tbody tr { border-top: 0; }
+.paper table.rtab th, .paper table.rtab td { padding: 5px 10px; vertical-align: top; }
+.paper table.rtab th:first-child, .paper table.rtab td:first-child { padding-left: 0; }
+.paper table.rtab th:last-child, .paper table.rtab td:last-child { padding-right: 0; }
+.paper table.rtab th { vertical-align: bottom; }
+.paper tbody tr.head td { font: italic 1em/1.4 var(--pfont); text-transform: none; letter-spacing: 0; color: var(--ink); background: none; padding-top: 10px; border-bottom: 0.5px solid var(--line); }
+/* the outcome filter is a control of the page, not part of the document */
+.paper .filter { font: 0.82rem/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); margin: 1em 0 0; text-indent: 0; text-align: left; }
+.paper .filter button { font: inherit; background: none; border: 0; padding: 0 3px; color: var(--muted); cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.paper .filter button:hover { color: var(--ink); }
+.paper .filter button[aria-pressed="true"] { color: var(--ink); font-weight: 650; text-decoration: none; }
+.paper .filter .count { margin-left: 6px; white-space: nowrap; }
+/* Table 1: every entry in full; read as labelled blocks when its box is narrow */
+.t1 .tablewrap { container-type: inline-size; }
+table.rtab.entries { table-layout: fixed; font-size: 0.8em; line-height: 1.45; }
+table.entries col.c-num { width: 4.5%; }
+table.entries col.c-name { width: 13%; }
+table.entries col.c-why { width: 15.5%; }
+table.entries col.c-chg { width: 20%; }
+table.entries col.c-res { width: 23%; }
+table.entries col.c-read { width: 15.5%; }
+table.entries col.c-out { width: 8.5%; }
+.paper table.rtab.entries th, .paper table.rtab.entries td { text-align: left; padding: 7px 7px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+.paper table.rtab.entries th { hyphens: none; overflow-wrap: normal; }
+.paper table.rtab.entries th:first-child, .paper table.rtab.entries td:first-child { padding-left: 0; }
+.paper table.rtab.entries th:last-child, .paper table.rtab.entries td:last-child { padding-right: 0; }
+table.entries tr.e + tr.e td { border-top: 0.5px solid var(--line); }
+.paper table.rtab.entries tr.grp td { padding: 14px 0 5px; border-bottom: 0.75px solid var(--muted); }
+table.entries tr.grp b { font-weight: 700; margin-right: 0.6em; }
+table.entries tr.grp .when { font-style: italic; color: var(--muted); }
+table.entries td.name b { display: block; font-weight: 600; }
+table.entries td.name .comp { display: block; font-style: italic; color: var(--muted); margin-top: 2px; }
+table.entries .sub { display: block; margin-top: 0.5em; }
+table.entries .na { color: var(--muted); }
+table.entries td.out { font-style: italic; }
+table.entries tr[data-v="adopted"] td.out { font-style: normal; font-weight: 700; }
+table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
+@container (max-width: 540px) {
+  table.rtab.entries, table.entries tbody { display: block; }
+  table.entries colgroup, table.entries thead { display: none; }
+  table.entries tr.e { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 12px 0; }
+  table.entries tr.e + tr.e { border-top: 0.5px solid var(--line); }
+  table.entries tr.e + tr.e td { border-top: 0; }
+  table.entries tr.grp, table.entries tr.grp td { display: block; }
+  .paper table.rtab.entries tr.e td { padding: 0; }
+  table.entries td.name { flex: 1 1 0; min-width: 55%; }
+  table.entries td.out { order: 2; }
+  table.entries td.txt { order: 3; flex: 0 0 100%; display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 10px; margin-top: 8px; }
+  table.entries td.txt::before { content: attr(data-label); font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.06em; color: var(--muted); }
+}
+@container (max-width: 420px) { table.entries td.txt { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+@media (max-width: 600px) { .paper { font-size: 16px; } .paper p, .paper li, .paper .rfig figcaption { text-align: left; } .paper dl.defs { grid-template-columns: minmax(0, 1fr); margin-left: 0; } .paper dl.defs dd { margin-bottom: 0.4em; } }
+
+@media (max-width: 960px) {
+  main { margin-left: 0; max-width: none; padding-top: 24px; }
+  #side { z-index: 30; width: min(88vw, 330px); transform: translateX(-102%); transition: transform .18s ease; }
+  body.nav-open #side { transform: none; }
+  body.nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  .topbar .brand { margin: 0; font-size: 1rem; }
+  .panels, .cols, .cols3 { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .tile .big { font-size: 1.4rem; }
+  .part { grid-template-columns: 1fr; }
+  .plot3d { height: 320px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } #side { transition: none; } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="btn" id="menu" type="button" aria-expanded="false" aria-controls="side">☰ Menu</button>
+  <div class="brand"><span class="mark">♪</span> Sound Intensity Search</div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="shell">
+  <aside id="side" aria-label="Site">
+    <div class="brand"><span class="mark">♪</span> Sound intensity search</div>
+    <div class="getcode">
+      <a class="btn primary" href="https://github.com/ktarila/sound_heuristics" target="_blank" rel="noopener">Code on GitHub ↗</a>
+      <a class="zip" href="https://github.com/ktarila/sound_heuristics/archive/refs/heads/master.zip">Download Encore (ZIP)</a>
+    </div>
+    <nav id="nav" aria-label="Pages"></nav>
+  </aside>
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="meta.js"></script>
+<script src="tables.js"></script>
+<script src="functions.js"></script>
+<script src="tried.js"></script>
+<script>
+(function () {
+  "use strict";
+  var T = window.SOUND_TEXT, META = window.SOUND_META, TABLE = window.SOUND_TABLE;
+  var SUITES = ["cec2022", "cec2017", "classic"];
+  var VERS = T.versions.map(function (v) { v.color = "--v" + v.id; return v; });
+  var state = {suite: "cec2022", f: 1, run: 0, frame: 0, frames: 60, playing: false, scale: "log", timer: null, speed: 12, data: null};
+  var cameraEye = {x: 1.3, y: -1.35, z: 0.9};
+  var syncing = false, token = 0;
+
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function h(z) { return state.scale === "log" ? z : Math.pow(10, z) - 1; }
+  function fmt(x) {
+    if (x === 0) return "0";
+    var a = Math.abs(x);
+    if (a < 1e-3 || a >= 1e5) return x.toExponential(2).replace("e+", "e").replace("e-0", "e-");
+    return a >= 100 ? x.toFixed(0) : a >= 10 ? x.toFixed(1) : a >= 1 ? x.toFixed(2) : x.toPrecision(2);
+  }
+  function fmtN(n) { return n.toLocaleString("en-US"); }
+  function num(v) { return String(v).replace("-", "−"); }
+  function theme() { return {fg: css("--ink"), muted: css("--muted"), grid: css("--line"), surface: css("--surface")}; }
+  function runOf(v) { return state.data.runs[String(v)][state.run]; }
+  function verdictWord(v) { return v === "+" ? "better" : v === "-" ? "worse" : "no different"; }
+  function verdictHtml(v, short) { return '<span class="' + (v === "+" ? "better" : v === "-" ? "worse" : "muted") + '">' + (short && v === "=" ? "same" : verdictWord(v)) + '</span>'; }
+
+  // one function: its name, group, building blocks and text, whichever group it is in
+  function ids(suite) {
+    var source = suite === "cec2022" ? T.functions.cec2022 : META[suite];
+    return Object.keys(source).map(Number);
+  }
+  function info(suite, i) {
+    var t = (T.functions[suite] || {})[i] || {};
+    if (suite === "cec2022") return t;
+    var m = META[suite][i], out = {};
+    Object.keys(m).forEach(function (k) { out[k] = m[k]; });
+    Object.keys(t).forEach(function (k) { out[k] = t[k]; });
+    return out;
+  }
+  function funcLabel(suite, i) { return suite === "classic" ? "f" + i : "F" + i; }
+  function rangeText(m) {
+    var same = m.lower.every(function (v) { return v === m.lower[0]; }) && m.upper.every(function (v) { return v === m.upper[0]; });
+    if (same) return num(m.lower[0]) + " to " + num(m.upper[0]);
+    return num(m.lower[0]) + " to " + num(m.upper[0]) + " and " + num(m.lower[1]) + " to " + num(m.upper[1]);
+  }
+  function stop() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    var b = $("play"); if (b) b.textContent = state.frame >= state.frames ? "↻ Replay" : "▶ Play";
+  }
+  function purge() {
+    ["p1", "p2", "p3", "conv2", "conv10"].forEach(function (id) {
+      var el = $(id); if (el && window.Plotly) { try { Plotly.purge(el); } catch (e) { /* none */ } }
+    });
+  }
+
+  // ---------- navigation ----------
+  function buildNav() {
+    var html = '<a href="#/tried" data-r="tried"><span>Research report</span></a>' +
+      '<a href="#/overview" data-r="overview"><span>Overview</span></a>' +
+      '<a href="#/versions" data-r="versions"><span>The three versions</span></a>' +
+      '<a href="#/limits" data-r="limits"><span>Strengths and limits</span></a>' +
+      '<span class="label">Functions</span>';
+    SUITES.forEach(function (s) {
+      var S = T.suites[s], all = ids(s);
+      html += '<details data-s="' + s + '"><summary>' + S.label + '<span class="count">' + all.length + '</span></summary>' +
+        '<a href="#/s/' + s + '" data-r="s:' + s + '"><span class="n"></span><span>All ' + all.length + ' functions</span></a>';
+      S.order.forEach(function (g) {
+        var members = all.filter(function (i) { return info(s, i).group === g; });
+        html += '<div class="sub">' + esc(g) + '</div>';
+        members.forEach(function (i) {
+          html += '<a href="#/f/' + s + '/' + i + '" data-r="f:' + s + ':' + i + '"><span class="n">' + funcLabel(s, i) + '</span><span>' + esc(info(s, i).name) + '</span></a>';
+        });
+      });
+      html += '</details>';
+    });
+    html += '<span class="label">More</span><a href="#/sources" data-r="sources"><span>Sources and notes</span></a>';
+    $("nav").innerHTML = html;
+    $("nav").addEventListener("click", function (e) {
+      if (e.target.closest("a")) { document.body.classList.remove("nav-open"); $("menu").setAttribute("aria-expanded", "false"); }
+    });
+    // mark the section being read in the report's contents panel
+    var spyQueued = false;
+    window.addEventListener("scroll", function () {
+      if (spyQueued || !$("doc-toc")) return;
+      spyQueued = true;
+      requestAnimationFrame(function () { spyQueued = false; tocSpy(); });
+    }, {passive: true});
+  }
+  function tocSpy() {
+    var toc = $("doc-toc"), current = null;
+    document.querySelectorAll(".paper h2[id], .paper h3.sub[id]").forEach(function (h) {
+      if (h.getBoundingClientRect().top < 120) current = h.id;
+    });
+    toc.querySelectorAll("a").forEach(function (a) {
+      if (a.dataset.goto === current) a.setAttribute("aria-current", "location"); else a.removeAttribute("aria-current");
+    });
+    // the bar on narrow screens names the current section; the list keeps that line in view
+    var on = toc.querySelector('a[aria-current="location"]'), list = toc.querySelector(".toc-list");
+    $("toc-now").textContent = on ? on.textContent.replace(/^([0-9.]+)/, "$1 ") : "";
+    if (on && list.scrollHeight > list.clientHeight) {
+      var r = on.getBoundingClientRect(), lr = list.getBoundingClientRect();
+      if (r.top < lr.top + 8) list.scrollTop -= lr.top + 8 - r.top;
+      else if (r.bottom > lr.bottom - 8) list.scrollTop += r.bottom - lr.bottom + 8;
+    }
+  }
+  function markNav(key, suite) {
+    document.querySelectorAll("#nav a").forEach(function (a) {
+      if (a.dataset.r === key) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("#nav details").forEach(function (d) {
+      if (suite) d.open = d.dataset.s === suite;
+    });
+    var cur = document.querySelector('#nav a[aria-current="page"]');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({block: "nearest"});
+  }
+  function parseRoute() {
+    var p = location.hash.replace(/^#\/?/, "").split("/");
+    if (p[0] === "f") {
+      if (SUITES.indexOf(p[1]) >= 0 && ids(p[1]).indexOf(+p[2]) >= 0) return {view: "f", suite: p[1], f: +p[2], key: "f:" + p[1] + ":" + p[2]};
+      if (ids("cec2022").indexOf(+p[1]) >= 0) return {view: "f", suite: "cec2022", f: +p[1], key: "f:cec2022:" + p[1]};
+    }
+    if (p[0] === "s" && SUITES.indexOf(p[1]) >= 0) return {view: "s", suite: p[1], key: "s:" + p[1]};
+    if (["overview", "versions", "limits", "tried", "sources"].indexOf(p[0]) >= 0) return {view: p[0], key: p[0], anchor: p[1]};
+    return {view: "tried", key: "tried"};
+  }
+  // ordinals get a raised suffix (2<sup>nd</sup>) and numbers such as 2.5e-20 are set as 2.5 × 10<sup>−20</sup>
+  var ORD = /(\d)(st|nd|rd|th)\b/g, EXP = /\b(\d+(?:\.\d+)?)e([+\-−]?)(\d+)\b/g;
+  function supOrdinals(root) {
+    var walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode: function (n) {
+      ORD.lastIndex = EXP.lastIndex = 0;
+      return (ORD.test(n.nodeValue) || EXP.test(n.nodeValue)) && !n.parentElement.closest("script, style, code, pre, sup, svg, .katex") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }});
+    var found = [];
+    while (walk.nextNode()) found.push(walk.currentNode);
+    found.forEach(function (n) {
+      var box = document.createElement("span");
+      box.innerHTML = esc(n.nodeValue).replace(ORD, "$1<sup class=\"ord\">$2</sup>").replace(EXP, function (m, a, sign, b) {
+        return a + "\u2009×\u200910<sup class=\"pow\">" + (sign === "-" || sign === "−" ? "−" : "") + b.replace(/^0+(?=\d)/, "") + "</sup>";
+      });
+      n.replaceWith.apply(n, Array.prototype.slice.call(box.childNodes));
+    });
+  }
+  function route() {
+    stop(); purge(); token += 1;
+    var r = parseRoute(), main = $("main");
+    markNav(r.key, r.suite);
+    document.body.classList.toggle("doc", r.view === "tried");
+    var pop = $("cite-pop"); if (pop && r.view !== "tried") pop.remove();
+    if (r.view === "f") { openFunction(r.suite, r.f); }
+    else {
+      main.innerHTML = r.view === "versions" ? versionsView() : r.view === "limits" ? limitsView() :
+        r.view === "tried" ? triedView() :
+        r.view === "sources" ? sourcesView() : r.view === "s" ? suiteView(r.suite) : overviewView();
+      wireTable();
+      supOrdinals(main);
+      if (r.view === "tried") wireTried();
+      document.title = (r.view === "s" ? T.suites[r.suite].label + " · " : r.view === "tried" ? "Improving sound intensity search · " : "") + "Sound Intensity Search";
+      window.scrollTo(0, 0);
+      if (r.anchor) { var el = $("v" + r.anchor); if (el) el.scrollIntoView(); }
+      main.focus({preventScroll: true});
+    }
+  }
+
+  // ---------- tables ----------
+  function resultsTable(suite) {
+    var S = T.suites[suite], rows = "", last = null, cols = suite === "classic" ? 8 : 7;
+    ids(suite).forEach(function (i) {
+      var m = info(suite, i), t = TABLE[suite][i];
+      if (m.group !== last) { rows += '<tr class="head"><td colspan="' + cols + '">' + esc(m.group) + '</td></tr>'; last = m.group; }
+      var lastCol = suite === "cec2017" ? verdictHtml(t.vs_compare, true) : t.place + " of " + t.place_of;
+      rows += '<tr class="link" data-s="' + suite + '" data-f="' + i + '" tabindex="0"><td>' + funcLabel(suite, i) + '</td><td>' + esc(m.name) + '</td>' +
+        (suite === "classic" ? '<td class="num">' + fmt(t.v1) + '</td>' : '') +
+        '<td class="num">' + fmt(t.v2) + '</td><td class="num ' + (t.v3 === 0 ? "solved" : "") + '">' + fmt(t.v3) + '</td><td class="num">' + verdictHtml(t.vs_v2, true) + '</td>' +
+        '<td class="num">' + fmt(t.compare) + ' <span class="muted">(' + esc(t.compare_label) + ')</span></td><td class="num">' + lastCol + '</td></tr>';
+    });
+    return '<div class="tablewrap"><table class="results"><thead><tr><th>' + S.label + '</th><th>Function</th>' +
+      (suite === "classic" ? '<th>Mating Call</th>' : '') + '<th>Echo</th><th>Encore</th><th>Encore vs Echo</th><th>' + S.compareHead + '</th><th>' + S.placeHead + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  function wireTable() {
+    document.querySelectorAll("table.results tbody tr.link").forEach(function (tr) {
+      function go() { location.hash = "#/f/" + tr.dataset.s + "/" + tr.dataset.f; }
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+  }
+
+  // ---------- overview and suite pages ----------
+  function overviewView() {
+    return '<span class="label">Three groups of test functions</span>' +
+      '<h1>Sound Intensity Search</h1>' +
+      '<p class="lede">A method for finding the lowest value of a function, inspired by how peafowl use infrasound in mating displays. ' +
+      'Every agent in a group makes a sound that is louder the better the agent is. Each agent listens, picks out the loudest sound it hears, ' +
+      'and moves towards it if that agent is better, or away from it if not.</p>' +
+      '<p class="muted">Based on Kenekayoro (2021), <em>Journal of Advances in Mathematics and Computer Science</em> 36(5). This site shows the three versions of the code, named after how they search: Mating Call, Echo and Encore.</p>' +
+      '<div class="tiles">' +
+      '<div class="tile"><div class="big">4th · 2nd</div><div class="small">of 13 on the CEC 2022 test set, at 10 and at 20 coordinates; no entry is significantly better</div></div>' +
+      '<div class="tile"><div class="big">4 of 12</div><div class="small">CEC 2022 functions solved in every run at 10 coordinates: F1, F3, F5, F11</div></div>' +
+      '<div class="tile"><div class="big">24 of 29</div><div class="small">CEC 2017 functions where Encore beats Echo at 30 coordinates; none worse</div></div>' +
+      '<div class="tile"><div class="big">F4 · F8 · F10</div><div class="small">where it is limited in CEC 2022: fields of valleys and a trap</div></div></div>' +
+      '<h2>Three groups of functions</h2><div class="cols3">' + SUITES.map(function (s) {
+        var S = T.suites[s];
+        return '<a class="card link" href="#/s/' + s + '"><span class="label">' + S.short + '</span><h3 style="margin-top:6px">' + S.title + '</h3>' +
+          '<p class="muted" style="margin:0">' + esc(S.blurb) + '</p></a>';
+      }).join("") + '</div>' +
+      '<p class="note" style="margin-top:12px">Pick any function from the sidebar for its history, a 3D surface, and a replay of the three versions searching it.</p>' +
+      '<h2>Get the code</h2><div class="card"><p style="margin-bottom:10px">The three versions, the benchmarks and the saved results are in the GitHub repository. Encore is on <code>master</code>; Echo is commit <code>b33e76f</code> and Mating Call commit <code>b703cac</code>. It needs Python 3 and NumPy.</p>' +
+      '<p style="margin:0"><a class="btn primary" style="display:inline-block;text-decoration:none" href="https://github.com/ktarila/sound_heuristics" target="_blank" rel="noopener">Open the repository ↗</a> &nbsp; ' +
+      '<a href="https://github.com/ktarila/sound_heuristics/archive/refs/heads/master.zip">Download Encore as a ZIP</a></p></div>' +
+      '<h2>How it works, in one minute</h2>' +
+      '<ol>' +
+      '<li><b>Loudness.</b> Agents are ranked; the best is loudest and the worst silent.</li>' +
+      '<li><b>Hearing.</b> Sound weakens with the square of the distance, so early on an agent mostly hears its neighbours. A rising exponent makes loudness count more later, so the best agents are heard from far away.</li>' +
+      '<li><b>Moving.</b> An agent turns to the loudest source it hears: towards it if it is better, away if not, plus a random push from the gaps between agents and places agents left earlier.</li>' +
+      '<li><b>Keeping.</b> Only some coordinates move, and a move is kept only if it improves the agent. Step sizes are learned from what worked.</li>' +
+      '<li><b>Finishing.</b> The last share of the evaluations goes to the best agent alone, refining its point.</li></ol>' +
+      '<p><a href="#/versions">What each of the three versions does →</a></p>';
+  }
+  function suiteView(suite) {
+    var S = T.suites[suite];
+    return '<span class="label">' + S.short + '</span><h1>' + S.title + '</h1>' +
+      '<p class="lede" style="max-width:75ch">' + esc(S.intro) + '</p>' +
+      '<h2>Results</h2><p class="note">Mean error over 30 runs (Echo on CEC 2017: 10 runs), from the saved benchmark files in <code>results/</code>. ' +
+      'The "Encore vs Echo" column says whether Encore is significantly better or worse than Echo on that function (Wilcoxon rank-sum test, 5% level). Click a row to open the function.</p>' +
+      resultsTable(suite);
+  }
+
+  // ---------- versions ----------
+  function phaseBar(v) {
+    return '<div class="bar">' + v.phases.map(function (p, i) {
+      return '<span style="flex:' + p[1] + ';background:var(' + v.color + ');opacity:' + (i === 0 ? 1 : 0.62) + '" title="' + esc(p[0]) + ' · ' + p[1] + '%">' +
+        (p[1] < 20 ? p[1] + '%' : esc(p[0]) + ' · ' + p[1] + '%') + '</span>';
+    }).join("") + '</div>';
+  }
+  function hereTwo(v, suite) { return typeof v.here.two === "string" ? v.here.two : v.here.two[suite]; }
+  function versionCard(v) {
+    var real = SUITES.map(function (s) { return '<li><b>' + T.suites[s].label + ":</b> " + esc(v.here.real[s]) + '</li>'; }).join("");
+    return '<section class="card" id="v' + v.id + '" style="margin-bottom:16px">' +
+      '<h2 style="margin-top:0;display:flex;align-items:center;gap:10px"><i class="dot" style="background:var(' + v.color + ')"></i>' + v.name + '</h2>' +
+      '<p class="lede" style="margin-bottom:6px">' + esc(v.tagline) + '</p>' +
+      '<p><b>The name.</b> ' + esc(v.named) + '</p>' +
+      '<p class="muted">' + esc(v.origin) + ' In the code and result files: <code>v' + v.id + '</code>.</p>' + phaseBar(v) +
+      '<div class="cols" style="margin-top:18px"><div><span class="label">What an agent does each round</span><ol style="margin-top:8px">' +
+      v.each_round.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + '</ol></div>' +
+      '<div><span class="label">' + (v.id === 3 ? "What is still missing" : "What went wrong") + '</span><ul style="margin-top:8px">' +
+      v.problem.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + '</ul>' +
+      '<span class="label">In the animations here</span><p style="margin-top:8px" class="muted"><b>Two-coordinate replays:</b> ' + esc(hereTwo(v, "cec2022")) +
+      (typeof v.here.two === "string" ? "" : " On the classic functions: " + esc(v.here.two.classic)) +
+      '</p><span class="label">The real runs</span><ul style="margin-top:8px" class="muted">' + real + '</ul></div></div></section>';
+  }
+  function versionsView() {
+    var rows = [["Loudness", "function value, scaled between worst and best", "rank only", "rank only"],
+      ["How far it hears", "1/r² from every agent", "1/r², exponent κ rises 1 → 4", "1/r², κ rises 0 → 8 (CEC), 1 → 4 (classic)"],
+      ["Which agent it follows", "the loudest, always", "the loudest, always", "the loudest for 10%, then a random loud one"],
+      ["Extra push", "momentum, decaying kicks, pull to the best", "gap between a random agent and an echo", "same as Echo"],
+      ["Step size", "fixed percentage", "learned from successes", "learned from successes"],
+      ["Group size", "fixed", "fixed", "CEC: 18 per coordinate, shrinks to 4; classic: fixed 30"],
+      ["When stuck", "nothing", "nothing", "starts again, keeps the best"],
+      ["Final refinement", "none", "last 30%", "CEC: last 10%; classic: last 30%"]];
+    return '<span class="label">The three versions</span><h1>What each version does</h1>' +
+      '<p class="lede">All three share one idea: agents that sound louder the better they are, and others that listen. They differ in how loudness is measured, how an agent moves, and how the run is organised, and each is named after the way it searches.</p>' +
+      VERS.map(versionCard).join("") +
+      '<h2>Side by side</h2><div class="tablewrap"><table class="left"><thead><tr><th>Part</th><th>Mating Call</th><th>Echo</th><th>Encore</th></tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td></tr>'; }).join("") + '</tbody></table></div>' +
+      '<p class="note" style="margin-top:12px">Full description, every experiment and the references are in the <a href="https://github.com/ktarila/sound_heuristics">README</a>. The ideas that did not work have <a href="#/tried">their own page</a>.</p>';
+  }
+
+  // ---------- strengths and limits ----------
+  function d20Table() {
+    var D = TABLE.cec2022_d20, rows = "", last = null;
+    ids("cec2022").forEach(function (i) {
+      var m = info("cec2022", i), t = D[i], r = t.v3_runs;
+      if (m.group !== last) { rows += '<tr class="head"><td colspan="6">' + esc(m.group) + '</td></tr>'; last = m.group; }
+      rows += '<tr class="link" data-s="cec2022" data-f="' + i + '" tabindex="0"><td>F' + i + '</td><td>' + esc(m.name) + '</td>' +
+        '<td class="num ' + (t.v3 === 0 ? "solved" : "") + '">' + fmt(t.v3) + (r.zero_runs ? ' <span class="muted">(' + r.zero_runs + ' of ' + r.runs + ' at 0)</span>' : '') + '</td>' +
+        '<td class="num">' + fmt(t.compare) + ' <span class="muted">(' + esc(t.compare_label) + ')</span></td>' +
+        '<td class="num">' + t.place + ' of ' + t.place_of + '</td>' +
+        '<td class="num"><span class="' + (t.entries_better ? "worse" : "muted") + '">' + t.entries_better + '</span> / <span class="' + (t.entries_worse ? "better" : "muted") + '">' + t.entries_worse + '</span></td></tr>';
+    });
+    return '<div class="tablewrap"><table class="results"><thead><tr><th>CEC 2022</th><th>Function</th><th>Encore</th><th>Best entry</th><th>Place</th><th>Entries better / worse</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  function limitsView() {
+    return '<span class="label">Summary</span><h1>What it does well, and what limits it</h1>' +
+      '<div class="cols">' +
+      '<div class="card"><h2 style="margin-top:0">What it does well</h2><ul>' +
+      '<li><b>It stands up against the competition entries.</b> On the CEC 2022 test set (ten coordinates, 30 runs) Encore is 4th of 13 by average rank (6.00). At 20 coordinates, with nothing changed, it is 2nd (5.17, behind EA4eig at 4.25 and level with the next three). At both sizes no entry is significantly better after Holm\'s correction. The settings were chosen on CEC 2017, so this set was a fair test.</li>' +
+      '<li><b>It solves the smooth and plain functions exactly.</b> F1, F3, F5 and F11 end at error 0 in every run. It finishes near the best entry on F6 (0.098 against 0.017), F9 (229 against 186) and F12 (159 against 147).</li>' +
+      '<li><b>It avoids traps on blended functions.</b> Hearing near neighbours first keeps separate groups apart instead of rushing into one valley. On CEC 2017 F22 and F24 it ends in the best valley in most runs, where the usual differential evolution rule is trapped (F22: error 21 against 93 and 100).</li>' +
+      '<li><b>Each added part helped, and the gains carry to 30 coordinates.</b> On CEC 2017 at 30 coordinates Encore beats Echo on 24 of 29 functions and loses on none (10 runs each).</li>' +
+      '<li><b>Listening to the loudest is a real rule, not a relabelling.</b> Swapped for the differential evolution rule, the results tie overall, but the two win in different places. The rules of its closest relatives, the firefly algorithm and fitness-distance-ratio particle swarm, either tie and fall into the same traps as the differential evolution rule, or are worse overall. Listening is the only one of the five rules tested that avoids the traps without being worse overall (<a href="#/tried">details</a>).</li></ul></div>' +
+      '<div class="card"><h2 style="margin-top:0">What limits it</h2><ul>' +
+      '<li><b>Regular fields of valleys.</b> On CEC 2022 F4 (Rastrigin) every run ends one to six valleys from the best (error 3.48; the best entry reaches 0.27 and three others about 1.3). F8 is 1.94 where most entries are below 0.6, and F7 is 0.027 where several reach 0.</li>' +
+      '<li><b>Traps.</b> On CEC 2022 F10, 24 of 30 runs end in the trap valley (error about 100), and 28 and 30 of 30 with two other sets of seeds. Six entries have a lower average. At 20 coordinates it is the other way round: 22 of 30 runs escape.</li>' +
+      '<li><b>A second minimum.</b> On CEC 2022 F2 (Rosenbrock) about 1 run in 6 ends at 3.987, the valley\'s second minimum.</li>' +
+      '<li><b>A trade-off that was not broken.</b> Hearing neighbours first protects against traps; hearing the best from anywhere crosses fields of valleys faster. They cannot be mixed in one group, and splitting the group or switching mid-run each traded one weakness for the other (<a href="#/tried">everything that was tried</a>).</li>' +
+      '<li><b>Narrow evidence.</b> The 30-coordinate check is CEC 2017 only, 10 runs. The 20-coordinate CEC 2022 result uses one set of seeds; at 10 coordinates other seeds moved F10 a lot. The settings were tuned on CEC 2017, so those numbers are optimistic. No real-world problems have been tried, and much of the machinery (the difference move, the step-size memory, the shrinking group, the final refinement) is borrowed from differential evolution. What is new is the sound model that decides whom each agent moves relative to.</li></ul></div></div>' +
+      '<h2>Where each CEC 2022 function stands, 10 coordinates</h2>' + resultsTable("cec2022") +
+      '<p class="note" style="margin-top:12px">Click a function for its history and a replay of the search.</p>' +
+      '<h2>At 20 coordinates</h2>' +
+      '<p>The same 12 functions with 20 coordinates and the competition budget of 1,000,000 evaluations per run; Encore with the same settings, 30 runs. ' +
+      'Place is by mean error among Encore and the 12 entries. The last column counts the entries significantly better and worse than Encore on that function (Wilcoxon rank-sum, 5% level).</p>' +
+      d20Table();
+  }
+
+  // ---------- tried and did not work (research report) ----------
+  var TRIED = window.SOUND_TRIED, VERDICTS = ["adopted", "worse", "trade", "none", "luck", "check"];
+  function triedItems() {
+    var all = [];
+    TRIED.stages.forEach(function (s, si) {
+      s.items.forEach(function (it) { all.push({it: it, num: all.length + 1, stage: si}); });
+    });
+    return all;
+  }
+  function triedFmt(t) {
+    return String(t).split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/).map(function (part, i) {
+      return i % 2 ? triedMath(part) : triedLinks(esc(part).replace(/\^([κφe2])/g, "<sup>$1</sup>"));
+    }).join("");
+  }
+  function triedMath(part) {
+    var display = part.slice(0, 2) === "$$", tex = display ? part.slice(2, -2) : part.slice(1, -1);
+    if (!window.katex) return '<span class="tex">' + esc(tex) + '</span>';
+    return katex.renderToString(tex, {displayMode: display, throwOnError: false});
+  }
+  // citations ("Sörensen, 2015", "Yao et al. (1999)") link to the reference list; "Section 2.1", "Table 3"
+  // and "entry 16" link to their targets. Links whose target does not exist are removed in wireTried().
+  var TRIED_REFS = null;
+  function triedRefIds() {
+    if (TRIED_REFS) return TRIED_REFS;
+    TRIED_REFS = {};
+    TRIED.references.forEach(function (r, i) {
+      var y = /\((\d{4})\)/.exec(r[0]);
+      if (y) TRIED_REFS[r[0].split(",")[0] + "|" + y[1]] = "ref-" + (i + 1);
+    });
+    return TRIED_REFS;
+  }
+  function triedLinks(h) {
+    var ids = triedRefIds(), S = "[A-ZÀ-Ž][A-Za-zÀ-ž'’-]+", more = "(?: et al\\.| &amp; " + S + ")?";
+    function cite(m, a, y) { var id = ids[a + "|" + y]; return id ? '<a class="cite" href="#/tried" data-goto="' + id + '" data-ref="' + id.slice(4) + '">' + m + '</a>' : m; }
+    h = h.replace(new RegExp("(" + S + ")" + more + " \\((\\d{4})\\)", "g"), cite);
+    h = h.replace(new RegExp("(" + S + ")" + more + ", (\\d{4})", "g"), cite);
+    function group(re, idOf) {
+      h = h.replace(re, function (m, word, list) {
+        var first = true;
+        return list.replace(/\d+(?:\.\d+)*/g, function (n) {
+          var text = first ? word + " " + n : n; first = false;
+          return '<a class="xref" href="#/tried" data-goto="' + idOf(n) + '">' + text + '</a>';
+        });
+      });
+    }
+    var SEP = "(?:, | and | to | or )";
+    group(new RegExp("\\b(Sections?) (\\d(?:\\.\\d+)?(?:" + SEP + "\\d(?:\\.\\d+)?)*)", "g"), function (n) { return "rep-" + n.replace(/\./g, "-"); });
+    group(new RegExp("\\b(Tables?) (\\d+(?:" + SEP + "\\d+)*)", "g"), function (n) { return "tab-" + n; });
+    group(new RegExp("\\b(Algorithms?) (\\d+)", "g"), function (n) { return "alg-" + n; });
+    group(new RegExp("\\b([Ee]ntr(?:y|ies)) (\\d+(?!\\.?\\d)(?:" + SEP + "\\d+(?!\\.?\\d))*)", "g"), function (n) { return "entry-" + n; });
+    return h;
+  }
+  function triedText(t) {
+    var all = triedItems(), kept = all.filter(function (e) { return e.it.kept; }).length;
+    return triedFmt(t).replace(/\{N\}/g, all.length).replace(/\{K\}/g, kept === 4 ? "Four" : kept).replace(/\{k\}/g, kept === 4 ? "four" : kept);
+  }
+  function triedParas(list) { return (list || []).map(function (t) { return Array.isArray(t) ? triedList(t) : '<p>' + triedText(t) + '</p>'; }).join(""); }
+  function triedList(list) { return '<ul>' + list.map(function (t) { return '<li>' + triedText(t) + '</li>'; }).join("") + '</ul>'; }
+  function triedTable(t) {
+    // a column is right-aligned when every cell is a number, a count ("4 of 31"), a pair or a dash
+    var rows = t.rows.filter(function (r) { return typeof r !== "string"; });
+    var numeric = t.head.map(function (_, j) {
+      return j > 0 && rows.every(function (r) { return /^([0-9.,*\s\/-]|of)*$/.test(r[j]); });
+    });
+    function cls(j) { return numeric[j] ? '' : ' class="l"'; }
+    var cap = /^(Table (\d+)\.)\s*([\s\S]*)$/.exec(t.caption);
+    return '<figure class="rfig"' + (cap ? ' id="tab-' + cap[2] + '"' : '') + '><figcaption>' +
+      (cap ? '<b>' + cap[1] + '</b> ' + triedFmt(cap[3]) : triedFmt(t.caption)) + '</figcaption><div class="tablewrap"><table class="rtab"><thead><tr>' +
+      t.head.map(function (h, j) { return '<th' + cls(j) + '>' + triedFmt(h) + '</th>'; }).join("") + '</tr></thead><tbody>' +
+      t.rows.map(function (r) {
+        if (typeof r === "string") return '<tr class="head"><td colspan="' + t.head.length + '">' + esc(r) + '</td></tr>';
+        return '<tr>' + r.map(function (c, j) { return '<td' + cls(j) + '>' + triedFmt(c) + '</td>'; }).join("") + '</tr>';
+      }).join("") + '</tbody></table></div></figure>';
+  }
+  // pseudocode: numbered lines, "@word@" is a keyword, lines marked † belong to Encore only
+  function triedAlgo(a) {
+    function kw(html) { return html.replace(/@([A-Za-z :.]+)@/g, "<b>$1</b>"); }
+    var cap = /^(Algorithm (\d+)\.)\s*([\s\S]*)$/.exec(a.caption);
+    return '<figure class="rfig algo" id="alg-' + cap[2] + '"><figcaption><b>' + cap[1] + '</b> ' + triedFmt(cap[3]) + '</figcaption>' +
+      '<p class="io">' + kw(triedFmt(a.input)) + '</p><ol>' + a.lines.map(function (l, i) {
+        return '<li' + (l.enc ? ' class="enc"' : '') + '><span class="ln">' + (i + 1) + '</span><span class="mk">' + (l.enc ? '†' : '') + '</span>' +
+          '<span class="code" style="--d:' + l.d + '">' + kw(triedFmt(l.c)) + '</span>' +
+          (l.note ? '<span class="cm">▹ ' + triedFmt(l.note) + '</span>' : '') + '</li>';
+      }).join("") + '</ol><p class="settings">' + kw(triedFmt(a.settings)) + '</p></figure>';
+  }
+  function triedEvidence(i) {
+    var r = TRIED.references[i - 1], ev = r[2] || {}, items = ev.evidence || [];
+    return items.map(function (e) {
+      return '<div class="ev-item"><div class="ev-for">Cited for: ' + esc(e["for"]) + '</div>' +
+        (e.code ? '<pre class="ev-q code">' + esc(e.quote) + '</pre>' : '<blockquote class="ev-q">“' + esc(e.quote).replace(/\n/g, "<br>") + '”</blockquote>') +
+        '<div class="ev-src">' + esc(e.where) + ' · ' + esc(e.src) + '</div></div>';
+    }).join("") + (ev.note ? '<p class="ev-note">' + esc(ev.note) + '</p>' : '') +
+      '<p class="ev-check">' + esc(ev.checked || "") + '</p>';
+  }
+  function triedRange(mine) {
+    var a = mine[0].num, b = mine[mine.length - 1].num;
+    return a === b ? "Entry " + a : "Entries " + a + (b === a + 1 ? " and " : " to ") + b;
+  }
+  // one row of Table 1: every field of the entry, labelled so the row can also be read as a block on narrow screens
+  function triedRow(e) {
+    var it = e.it;
+    function cell(label, cls, html) { return '<td class="' + cls + '" data-label="' + label + '"><div>' + (html || '<span class="na">-</span>') + '</div></td>'; }
+    return '<tr class="e" id="entry-' + e.num + '" data-v="' + it.verdict + '" data-stage="' + e.stage + '">' +
+      '<td class="num">' + e.num + '</td>' +
+      '<td class="name"><b>' + triedFmt(it.name) + '</b><span class="comp">' + esc(it.component) + '</span></td>' +
+      cell("Motivation", "txt", it.why ? triedFmt(it.why) : '') +
+      cell("Change", "txt", triedFmt(it.change) + (it.setup ? '<span class="sub"><i>Protocol.</i> ' + triedFmt(it.setup) + '</span>' : '')) +
+      cell("Result", "txt", triedFmt(it.result)) +
+      cell("Reading", "txt", (it.reading ? triedFmt(it.reading) : '') + (it.kept ? '<span class="sub"><i>Partly kept.</i> ' + triedFmt(it.kept) + '</span>' : '')) +
+      '<td class="out">' + TRIED.verdicts[it.verdict] + '</td></tr>';
+  }
+  function triedView() {
+    var all = triedItems();
+    var count = {}; VERDICTS.forEach(function (v) { count[v] = 0; });
+    all.forEach(function (e) { count[e.it.verdict] += 1; });
+    function h2(id, no, text) { return '<h2 id="' + id + '">' + (no ? '<span class="no">' + no + '</span>' : '') + esc(text) + '</h2>'; }
+    function h3(id, no, text) { return '<h3 class="sub" id="' + id + '"><span class="no">' + no + '</span>' + esc(text) + '</h3>'; }
+    var filter = '<p class="filter" role="group" aria-label="Filter Table 1 by outcome">Show rows of Table 1: ' +
+      '<button type="button" data-v="all" aria-pressed="true">all (' + all.length + ')</button>' +
+      VERDICTS.map(function (v) {
+        return ' · <button type="button" data-v="' + v + '" aria-pressed="false">' + TRIED.verdicts[v].toLowerCase() + ' (' + count[v] + ')</button>';
+      }).join("") + '<span class="count" id="tried-count" aria-live="polite">Showing all ' + all.length + ' entries.</span></p>';
+    var body = TRIED.stages.map(function (s, si) {
+      var mine = all.filter(function (e) { return e.stage === si; });
+      return '<tr class="grp" data-stage="' + si + '"><td colspan="7"><b>3.' + (si + 1) + ' ' + esc(s.title) + '</b>' +
+        '<span class="when">' + triedRange(mine) + ' · ' + esc(s.when) + '</span></td></tr>' + mine.map(triedRow).join("");
+    }).join("");
+    var table1 = '<figure class="rfig t1" id="tab-1"><figcaption><b>Table 1.</b> All ' + all.length + ' entries, in the order they were tested and grouped by stage. ' +
+      'Each stage row names the stage, the functions and number of runs used, and the baseline that results are compared with. ' +
+      'A dash means the field does not apply.</figcaption>' +
+      '<div class="tablewrap"><table class="rtab entries"><colgroup><col class="c-num"><col class="c-name"><col class="c-why"><col class="c-chg"><col class="c-res"><col class="c-read"><col class="c-out"></colgroup>' +
+      '<thead><tr><th>No.</th><th>Entry and part changed</th><th>Motivation</th><th>Change</th><th>Result</th><th>Reading</th><th>Outcome</th></tr></thead>' +
+      '<tbody>' + body + '</tbody></table></div></figure>';
+    var stages = TRIED.stages.map(function (s, si) {
+      var mine = all.filter(function (e) { return e.stage === si; });
+      return '<section class="rstage">' + h3("rep-3-" + (si + 1), "3." + (si + 1), s.title) +
+        '<p class="when">' + triedLinks(triedRange(mine) + ' in Table 1') + ' · ' + esc(s.when) + '</p>' +
+        (s.intro ? '<p>' + triedFmt(s.intro) + '</p>' : '') + (s.table ? triedTable(s.table) : '') + '</section>';
+    }).join("");
+    var methods = TRIED.methods.map(function (m, i) {
+      var body = m.verdictList ?
+        '<p>Every entry is given one of five outcomes:</p><dl class="defs">' + VERDICTS.map(function (v) {
+          return '<dt>' + TRIED.verdicts[v] + '</dt><dd>' + esc(TRIED.verdictNotes[v]) + '.</dd>';
+        }).join("") + '</dl>' :
+        triedParas(m.paras) + (m.algorithm ? triedAlgo(m.algorithm) : '') + (m.list ? triedList(m.list) : '');
+      return h3("rep-2-" + (i + 1), "2." + (i + 1), m.heading) + body;
+    }).join("");
+    var discussion = TRIED.discussion.map(function (d, i) {
+      return h3("rep-4-" + (i + 1), "4." + (i + 1), d.heading) + triedParas(d.paras) + (d.table ? triedTable(d.table) : '');
+    }).join("");
+
+    return '<div class="doc-wrap"><aside class="doc-toc" id="doc-toc" aria-label="Contents">' +
+      '<button type="button" class="toc-toggle" id="toc-toggle" aria-expanded="false" aria-controls="toc-list"><span>Contents</span><span class="now" id="toc-now"></span></button>' +
+      '<div class="toc-head">Contents</div><nav class="toc-list" id="toc-list">' + triedToc() + '</nav></aside>' +
+      '<article class="paper"><header class="ptitle"><p class="kind">Technical report</p><h1>' + esc(TRIED.title) + '</h1>' +
+      '<p class="byline">From Echo to Encore</p></header>' +
+      '<section class="abstract"><h2>Abstract</h2><p>' + triedText(TRIED.abstract) + '</p>' +
+      '<p class="kw"><i>Keywords:</i> ' + esc(TRIED.keywords.join("; ")) + '</p></section>' +
+      h2("rep-1", "1", "Introduction") + triedParas(TRIED.intro) + '<p>The contributions are:</p>' + triedList(TRIED.contributions) +
+      h2("rep-2", "2", "Method") + methods +
+      h2("rep-3", "3", "Results") + '<p>' + triedText(TRIED.resultsIntro) + '</p>' + filter + table1 + stages +
+      h2("rep-4", "4", "Discussion") + discussion +
+      h2("rep-5", "5", "Threats to validity") + triedList(TRIED.threats) +
+      h2("rep-6", "6", "Conclusion") + triedParas(TRIED.conclusion) +
+      h2("rep-refs", "", "References") + '<ul class="refs">' + TRIED.references.map(function (r, i) {
+        var n = ((r[2] || {}).evidence || []).length;
+        return '<li id="ref-' + (i + 1) + '">' + esc(r[0]) + ' <a href="' + r[1] + '" target="_blank" rel="noopener">' + esc(r[1].replace(/^https?:\/\/(doi\.org\/)?/, r[1].indexOf("doi.org") >= 0 ? "doi:" : "")) + '</a>' +
+          '<details class="why"><summary>Why cited · ' + (n ? n + (n === 1 ? ' passage' : ' passages') + ' quoted' : 'no open text to quote') + '</summary>' + triedEvidence(i + 1) + '</details></li>';
+      }).join("") + '</ul></article></div>' +
+      '<p class="after-doc"><a href="#/versions">What was kept: the three versions →</a></p>';
+  }
+  function triedToc() {
+    function link(id, no, text, cls) {
+      return '<a href="#/tried" data-goto="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + '><span class="n">' + no + '</span><span>' + esc(text) + '</span></a>';
+    }
+    function subs(prefix, list, key) {
+      return list.map(function (x, i) { return link("rep-" + prefix + "-" + (i + 1), prefix + "." + (i + 1), x[key], "l2"); }).join("");
+    }
+    return link("rep-1", "1", "Introduction") + link("rep-2", "2", "Method") + subs(2, TRIED.methods, "heading") +
+      link("rep-3", "3", "Results") + subs(3, TRIED.stages, "title") + link("rep-4", "4", "Discussion") + subs(4, TRIED.discussion, "heading") +
+      link("rep-5", "5", "Threats to validity") + link("rep-6", "6", "Conclusion") + link("rep-refs", "", "References");
+  }
+  // a card with the cited passages appears while a citation is hovered or focused
+  function wireCitations() {
+    var old = $("cite-pop"); if (old) old.remove();
+    var pop = document.createElement("div"), timer = null, current = null;
+    pop.id = "cite-pop"; pop.className = "cite-pop"; pop.setAttribute("role", "tooltip"); pop.hidden = true;
+    document.body.appendChild(pop);
+    // below the citation if it fits, otherwise on the side with more room; never over the citation itself
+    function place(a) {
+      var r = a.getBoundingClientRect(), below = innerHeight - r.bottom - 14, above = r.top - 14;
+      pop.style.maxHeight = Math.min(560, Math.max(below, above)) + "px";
+      var h = pop.offsetHeight, w = pop.offsetWidth;
+      pop.style.top = (h <= below || below >= above ? r.bottom + 6 : r.top - 6 - h) + "px";
+      pop.style.left = Math.max(12, Math.min(r.left, innerWidth - w - 12)) + "px";
+    }
+    function show(a) {
+      clearTimeout(timer);
+      if (current !== a) { pop.innerHTML = '<div class="ev-ref">' + esc(TRIED.references[a.dataset.ref - 1][0]) + '</div>' + triedEvidence(+a.dataset.ref); pop.scrollTop = 0; current = a; }
+      pop.hidden = false; place(a);
+    }
+    function hide(now) { clearTimeout(timer); timer = setTimeout(function () { pop.hidden = true; current = null; }, now ? 0 : 160); }
+    document.querySelectorAll(".paper a.cite[data-ref]").forEach(function (a) {
+      a.addEventListener("mouseenter", function () { show(a); });
+      a.addEventListener("focus", function () { show(a); });
+      a.addEventListener("mouseleave", function () { hide(); });
+      a.addEventListener("blur", function () { hide(); });
+    });
+    pop.addEventListener("mouseenter", function () { clearTimeout(timer); });
+    pop.addEventListener("mouseleave", function () { hide(); });
+    if (!window.__citeScroll) { window.__citeScroll = true; addEventListener("scroll", function () { var p = $("cite-pop"); if (p) p.hidden = true; }, {passive: true}); }
+  }
+  function wireTried() {
+    var toc = $("doc-toc"), toggle = $("toc-toggle");
+    function openToc(on) { toc.classList.toggle("open", on); toggle.setAttribute("aria-expanded", on ? "true" : "false"); }
+    toggle.addEventListener("click", function () { openToc(!toc.classList.contains("open")); });
+    toc.addEventListener("click", function (e) {
+      var a = e.target.closest("a[data-goto]"), el = a && $(a.dataset.goto);
+      if (!a) return;
+      e.preventDefault();
+      openToc(false);
+      if (el) el.scrollIntoView({behavior: "smooth", block: "start"});
+    });
+    document.addEventListener("keydown", function onKey(e) {
+      if (!document.body.contains(toc)) { document.removeEventListener("keydown", onKey); return; }
+      if (e.key === "Escape" && toc.classList.contains("open")) { openToc(false); toggle.focus(); }
+    });
+    tocSpy();
+    var buttons = document.querySelectorAll(".filter button"), total = triedItems().length;
+    document.querySelectorAll(".paper a[data-goto]").forEach(function (a) { if (!$(a.dataset.goto)) a.outerHTML = a.innerHTML; });
+    wireCitations();
+    document.querySelector(".paper").addEventListener("click", function (ev) {
+      var a = ev.target.closest("a[data-goto]"), el = a && $(a.dataset.goto);
+      if (!a) return;
+      ev.preventDefault();
+      if (!el) return;
+      if (el.closest("[hidden]")) { var showAll = document.querySelector('.filter button[data-v="all"]'); if (showAll) showAll.click(); }
+      el.scrollIntoView({behavior: "smooth", block: el.tagName === "TR" ? "center" : "start"});
+      el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit");
+      setTimeout(function () { el.classList.remove("hit"); }, 1800);
+    });
+    buttons.forEach(function (c) {
+      c.addEventListener("click", function () {
+        var v = c.dataset.v, shown = 0, perStage = {};
+        buttons.forEach(function (o) { o.setAttribute("aria-pressed", o === c ? "true" : "false"); });
+        document.querySelectorAll("table.entries tr.e").forEach(function (r) {
+          var on = v === "all" || r.dataset.v === v;
+          r.hidden = !on;
+          if (on) { shown += 1; perStage[r.dataset.stage] = true; }
+        });
+        document.querySelectorAll("table.entries tr.grp").forEach(function (g) { g.hidden = !perStage[g.dataset.stage]; });
+        $("tried-count").textContent = v === "all" ? "Showing all " + total + " entries." : "Showing the " + shown + " of " + total + " entries marked “" + TRIED.verdicts[v] + "”.";
+      });
+    });
+  }
+
+  // ---------- sources ----------
+  function sourcesView() {
+    return '<span class="label">More</span><h1>Sources and notes</h1>' +
+      '<p>The code is at <a href="https://github.com/ktarila/sound_heuristics">github.com/ktarila/sound_heuristics</a>. Only facts that were checked against a source are stated about where each function comes from. Formulas are read from the code in <code>sound_heuristic/</code> (<code>cec2022.py</code>, <code>cec2017.py</code>, <code>fitness.py</code>).</p>' +
+      '<ul>' + T.sources.map(function (s) { return '<li><a href="' + s[1] + '">' + esc(s[0]) + '</a></li>'; }).join("") + '</ul>' +
+      '<h2>What was not checked</h2>' +
+      '<p>No original source was found for Zakharov, Levy, Katsuura, HGBat (other than its place in CEC 2014), Weierstrass, the bent cigar, discus and ellipsoid, the Lunacek bi-Rastrigin, the expanded Griewank-Rosenbrock and Schaffer forms, Shekel\'s foxholes, Kowalik, the Hartman and Shekel functions, the penalized functions or the Schwefel 1.2, 2.21 and 2.22 functions, so no origin or date is given for them beyond Yao et al. (1999) for the classic ones. ' +
+      'The year of the CEC 2022 technical report is the one in the README (2021). The ResearchGate document on the CEC 2022 competition on dynamic multimodal optimisation could not be opened (it returns "forbidden"), and it concerns a different competition from the single-objective one used here. ' +
+      'Where a part is described as having many valleys, a ring or a narrow strip, that is read from its formula or the surfaces here, not from a published description.</p>' +
+      '<h2>How the surfaces and runs were made</h2>' +
+      '<ul><li>Each surface is the function with two of its coordinates free (the first two) and the others held at the function\'s best point, on an 81 × 81 grid. For the functions with only two coordinates it is the whole function.</li>' +
+      '<li>The two-coordinate replays run each version on that surface for about 5,000 evaluations, one recorded run per panel (three runs to choose from).</li>' +
+      '<li>The real runs use the whole function: 10 coordinates for the CEC groups, the usual dimension for the classic ones. Echo and Encore use the settings and seeds of the first three runs of the benchmark and reproduce them: 382 of 384 runs match exactly, and the other two are on the noisy f7, where the best-so-far line counts a noisy evaluation the search itself did not keep. Mating Call is read from the old commit <code>b703cac</code>.</li>' +
+      '<li>Everything is built by <code>docs/make_data.py</code> and <code>docs/make_text.py</code> from the code and saved results in the repository.</li></ul>';
+  }
+
+  // ---------- one function ----------
+  function openFunction(suite, i) {
+    var main = $("main"), mine = token, key = suite + "_" + i;
+    state.suite = suite; state.f = i; state.frame = 0;
+    main.innerHTML = '<p class="muted">Loading ' + funcLabel(suite, i) + '…</p>';
+    function ready() {
+      if (mine !== token) return;
+      state.data = window.SOUND_FN[key];
+      state.frames = state.data.runs["1"][0].frames.length - 1;
+      main.innerHTML = functionView(suite, i);
+      supOrdinals(main);
+      document.title = funcLabel(suite, i) + " " + info(suite, i).name + " · Sound Intensity Search";
+      window.scrollTo(0, 0);
+      wireFunction();
+      main.focus({preventScroll: true});
+    }
+    if (window.SOUND_FN && window.SOUND_FN[key]) { ready(); return; }
+    var s = document.createElement("script");
+    s.src = "data/" + key + ".js"; s.onload = ready;
+    s.onerror = function () { if (mine === token) main.innerHTML = '<div class="fail">Could not load the data for this function (data/' + key + '.js). Run <code>python docs/make_data.py</code> or check the files.</div>'; };
+    document.head.appendChild(s);
+  }
+
+  function partsHtml(m, suite) {
+    return (m.parts || []).map(function (p) {
+      var pi = T.parts[p[0]] || {}, single = m.parts.length === 1;
+      return '<div class="part"><div><div class="what">' + esc(p[0]) + '</div><div class="share">' + esc(p[1]) + '</div></div><div><p>' + esc(pi.plain || "") + '</p>' +
+        (pi.origin && !single ? '<p class="src">' + esc(pi.origin) + '</p>' : '') + '</div></div>';
+    }).join("");
+  }
+  function functionView(suite, i) {
+    var S = T.suites[suite], m = info(suite, i), t = TABLE[suite][i], r = t.v3_runs, d = state.data;
+    var all = ids(suite), prev = all[all.indexOf(i) - 1], next = all[all.indexOf(i) + 1];
+    var solved = r.zero_runs === r.runs, classic = suite === "classic";
+    var parts = classic ? [[m.name, "all " + m.dim + " coordinates"]] : m.parts;
+    var also = suite === "cec2022" ? m.also2017 && "CEC 2017 " + m.also2017 : suite === "cec2017" ? m.also2022 && "CEC 2022 " + m.also2022 : null;
+    var best = classic ? fmt(m.optimum) : String(m.bias);
+    var errNote = classic ? "error = |value − " + fmt(m.optimum) + "|" : "error = value − " + m.bias;
+    var rangeTxt = classic ? rangeText(m) : S.rangeText;
+    var dimTxt = (classic ? m.dim : 10) + " coordinates";
+    var historyText = m.history || ("Hybrid and composition functions are described under Type. " + (m.group === "Hybrid" ? "The parts below are the functions added together." : "The parts below are the functions blended together."));
+    var compare = "";
+    if (suite === "cec2022") compare = 'Best of the 12 competition entries: ' + fmt(t.compare) + ' (' + esc(t.compare_label) + ').';
+    else if (suite === "cec2017") compare = 'The differential evolution rule in place of listening (L-SHADE form): ' + fmt(t.compare) + '; Encore is ' + verdictHtml(t.vs_compare) + ' than it on this function' + (t.vs_compare === "=" ? "" : "") + '.';
+    else compare = 'Published averages as errors: GWO ' + fmt(t.published.GWO) + ', PSO ' + fmt(t.published.PSO) + ', GSA ' + fmt(t.published.GSA) + '. Encore places ' + t.place + ' of 4 with them.';
+    var ten = d.ten_dim, two = ten <= 2;
+    var legendRange = "flat axes: the two free coordinates, " + num(d.axes[0][0]) + " to " + num(d.axes[0][1]) + (d.axes[0][0] === d.axes[1][0] && d.axes[0][1] === d.axes[1][1] ? "" : " and " + num(d.axes[1][0]) + " to " + num(d.axes[1][1]));
+    return '<div class="crumb"><a href="#/s/' + suite + '">' + S.label + '</a> · ' + esc(m.group) + ' · function ' + i + '</div>' +
+      '<h1>' + funcLabel(suite, i) + ' · ' + esc(m.name) + '</h1>' +
+      '<div class="tiles">' +
+      '<div class="tile"><div class="label">Type</div><div class="big" style="font-size:1.2rem">' + esc(m.group) + '</div><div class="small">' + S.label + ' function ' + i + ' of ' + all.length + '</div></div>' +
+      '<div class="tile"><div class="label">Best value</div><div class="big" style="font-size:1.35rem">' + best + '</div><div class="small">' + errNote + '</div></div>' +
+      '<div class="tile"><div class="label">Search range</div><div class="big" style="font-size:1.2rem">' + rangeTxt + '</div><div class="small">each coordinate</div></div>' +
+      '<div class="tile"><div class="label">Real runs</div><div class="big" style="font-size:1.2rem">' + dimTxt + '</div><div class="small">' + fmtN(d.ten_evals) + ' evaluations</div></div>' +
+      (also ? '<div class="tile"><div class="label">Same function in</div><div class="big" style="font-size:1.2rem">' + esc(also) + '</div><div class="small">' + (suite === "cec2022" ? "the design set used to tune Encore" : "the test set, never tuned on") + '</div></div>' : '') + '</div>' +
+      '<div class="cols"><div class="card"><h3>History and properties</h3><p>' + esc(historyText) + '</p>' +
+      '<p class="muted"><b>Type.</b> ' + esc(T.groups[m.group] || "") + '</p>' + (m.note ? '<p class="muted"><b>In the results.</b> ' + esc(m.note) + '</p>' : '') + '</div>' +
+      '<div class="card"><h3>Encore on this function <span class="pill ' + (solved ? "solved" : "") + '">' + (solved ? "solved" : t.place ? "place " + t.place + " of " + t.place_of : "see below") + '</span></h3>' +
+      '<p>Over 30 runs: ' + (solved ? 'error 0 in every run.' : 'average error <b>' + fmt(t.v3) + '</b>, best run ' + fmt(r.best) + ', median ' + fmt(r.median) + ', worst ' + fmt(r.worst) + '; ' + r.zero_runs + ' of ' + r.runs + ' runs reach 0.') + '</p>' +
+      '<p class="muted">Encore against Echo (' + fmt(t.v2) + (classic ? ', Mating Call ' + fmt(t.v1) : '') + '): ' + verdictHtml(t.vs_v2) + ' (5% level). ' + compare + '</p>' +
+      (m.look ? '<p class="muted"><b>What to look for.</b> ' + esc(m.look) + '</p>' : '') + '</div></div>' +
+      '<h2>Built from</h2><div class="card">' + partsHtml({parts: parts}, suite) + '</div>' +
+      '<h2>Watch the three versions search</h2>' +
+      '<p>All three panels use this function and the same number of evaluations. Press play or drag the slider; drag a panel to turn it and the three turn together.</p>' +
+      '<div class="controls"><button class="btn primary" id="play" type="button">▶ Play</button>' +
+      '<div class="slider"><input id="slider" type="range" min="0" max="' + state.frames + '" value="0" aria-label="Moment in the run"><span class="evals" id="evals">0 evaluations</span></div>' +
+      '<label class="opt">Run <select id="run" aria-label="Which recorded run"></select></label>' +
+      '<label class="opt">Speed <select id="speed" aria-label="Playback speed"><option value="6">slow</option><option value="12">normal</option><option value="24">fast</option></select></label>' +
+      '<label class="opt">Height <select id="scale" aria-label="Height scale"><option value="log">log10(1 + error)</option><option value="lin">error as it is</option></select></label></div>' +
+      '<div class="panels">' + VERS.map(function (v) {
+        return '<div class="panel"><div class="head"><h3><i class="dot" style="background:var(' + v.color + ')"></i>' + v.name + '</h3>' +
+          '<div class="tag">' + esc(v.tagline) + '</div><ul>' + v.short.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ul>' +
+          '<a class="more" href="#/versions/' + v.id + '">How it works →</a></div>' +
+          '<div class="plot3d" id="p' + v.id + '"></div><div class="status"><span id="s' + v.id + 'a"></span><span id="s' + v.id + 'b"></span></div></div>';
+      }).join("") + '</div>' +
+      '<div class="legend"><span><i class="dot" style="background:#fff;border:1px solid #666"></i> agent</span><span><i class="dot" style="background:#ff2d55"></i> best agent so far</span>' +
+      '<span>dashed pole: the lowest point</span><span>dark = low</span><span>' + legendRange + '</span></div>' +
+      '<p class="note">' + (two ? 'This function has two coordinates, so the surface is the whole function. ' : 'The surface is this function with two of its ' + ten + ' coordinates free (the first two) and the others held at their best values. Two coordinates are much easier than ' + ten + '. ') +
+      'Here the recorded runs of Encore and Echo mostly end close to the lowest point, and Mating Call is slower and sometimes stops short. ' +
+      'Each panel is one recorded run, not an average.' + (two ? '' : ' The runs below on the whole function show where the differences are.') + ' ' + esc(hereTwo(VERS[2], suite)) + '</p>' +
+      '<div class="chart"><h3>Best error so far, two coordinates</h3><div class="plot2d" id="conv2"></div></div>' +
+      '<h2>' + (two ? "The same function, a longer run" : "The real problem: " + ten + " coordinates") + '</h2>' +
+      '<p>The ' + (two ? "" : "same function with all " + ten + " coordinates free: the ") + 'three versions with ' + fmtN(d.ten_evals) + ' evaluations, three runs each (thin lines). Echo and Encore use the settings and seeds of the first three runs of the benchmark. Errors up to 1e-8 count as zero and are drawn along the bottom.</p>' +
+      '<div class="chart"><h3>Best error so far' + (two ? "" : ", " + ten + " coordinates") + '</h3><div class="plot2d" id="conv10"></div></div>' +
+      '<p id="tensummary"></p>' +
+      '<div class="pager">' + (prev ? '<a href="#/f/' + suite + '/' + prev + '"><span class="label">Previous</span><br>' + funcLabel(suite, prev) + ' · ' + esc(info(suite, prev).name) + '</a>' : '<span style="flex:1"></span>') +
+      (next ? '<a class="next" href="#/f/' + suite + '/' + next + '"><span class="label">Next</span><br>' + funcLabel(suite, next) + ' · ' + esc(info(suite, next).name) + '</a>' : '<span style="flex:1"></span>') + '</div>';
+  }
+
+  function wireFunction() {
+    var runSel = $("run"), n = state.data.runs["1"].length;
+    for (var r = 0; r < n; r++) { var o = document.createElement("option"); o.value = r; o.textContent = "run " + (r + 1); runSel.appendChild(o); }
+    if (state.run >= n) state.run = 0;
+    runSel.value = state.run; $("speed").value = String(state.speed); $("scale").value = state.scale;
+    $("play").addEventListener("click", function () { state.playing ? stop() : play(); });
+    $("slider").addEventListener("input", function (e) { stop(); state.frame = +e.target.value; updateFrame(); });
+    runSel.addEventListener("change", function (e) { stop(); state.run = +e.target.value; state.frame = 0; buildPanels(); drawConv2(); drawConv10(); updateFrame(); });
+    $("speed").addEventListener("change", function (e) { state.speed = +e.target.value; if (state.playing) { stop(); play(); } });
+    $("scale").addEventListener("change", function (e) { stop(); state.scale = e.target.value; buildPanels(); updateFrame(); });
+    if (!window.Plotly) {
+      $("main").insertAdjacentHTML("afterbegin", '<div class="fail">The charts need Plotly.js from a CDN and it did not load. Check the connection and reload.</div>');
+      return;
+    }
+    buildPanels(); drawConv2(); drawConv10(); updateFrame();
+  }
+  function play() {
+    if (state.frame >= state.frames) state.frame = 0;
+    state.playing = true; $("play").textContent = "❚❚ Pause";
+    state.timer = setInterval(function () {
+      if (state.frame >= state.frames) { stop(); return; }
+      state.frame += 1; updateFrame();
+      if (state.frame >= state.frames) stop();
+    }, 1000 / state.speed);
+  }
+
+  // ---------- 3D panels ----------
+  function zTop() { return Math.max.apply(null, state.data.z.map(function (row) { return Math.max.apply(null, row); })); }
+  function agentArrays(v, k) {
+    var fr = runOf(v).frames[k], lift = 0.02 * h(zTop());
+    var z = fr.z.map(function (q) { return h(q) + lift; }), best = 0;
+    for (var i = 1; i < z.length; i++) if (z[i] < z[best]) best = i;
+    return {x: fr.x, y: fr.y, z: z, bx: [fr.x[best]], by: [fr.y[best]], bz: [z[best] + lift]};
+  }
+  function linspace(lo, hi, n) { var a = [], i; for (i = 0; i < n; i++) a.push(lo + (hi - lo) * i / (n - 1)); return a; }
+  function buildPanels() {
+    var d = state.data, n = d.z.length, ax0 = d.axes[0], ax1 = d.axes[1];
+    var axisX = linspace(ax0[0], ax0[1], n), axisY = linspace(ax1[0], ax1[1], n);
+    var Z = d.z.map(function (row) { return row.map(h); }), top = h(zTop()), t = theme(), opt = d.optimum, jobs = [];
+    VERS.forEach(function (v) {
+      var a = agentArrays(v.id, state.frame);
+      var traces = [
+        {type: "surface", x: axisX, y: axisY, z: Z, colorscale: "Viridis", showscale: false, hoverinfo: "skip",
+         lighting: {ambient: 0.75, diffuse: 0.6, specular: 0.1, roughness: 0.8}, contours: {z: {show: false}}},
+        {type: "scatter3d", mode: "markers", x: a.x, y: a.y, z: a.z, hoverinfo: "skip", marker: {size: 3.6, color: "#ffffff", line: {color: "#111111", width: 1}}},
+        {type: "scatter3d", mode: "markers", x: a.bx, y: a.by, z: a.bz, hoverinfo: "skip", marker: {size: 6, color: "#ff2d55", line: {color: "#111111", width: 1}}},
+        {type: "scatter3d", mode: "lines", x: [opt[0], opt[0]], y: [opt[1], opt[1]], z: [0, top * 1.05], hoverinfo: "skip", line: {color: t.fg, width: 3, dash: "dash"}}
+      ];
+      var ax = function (title, range) { return {title: title, color: t.muted, gridcolor: t.grid, showbackground: false, range: range}; };
+      var layout = {margin: {l: 0, r: 0, t: 0, b: 0}, paper_bgcolor: "rgba(0,0,0,0)", font: {color: t.fg}, showlegend: false,
+        scene: {aspectmode: "manual", aspectratio: {x: 1, y: 1, z: 0.7}, camera: {eye: cameraEye},
+          xaxis: ax("x₁", ax0), yaxis: ax("x₂", ax1), zaxis: ax("height", [0, top * 1.08])}};
+      jobs.push(Plotly.react("p" + v.id, traces, layout, {displayModeBar: false, responsive: true}));
+    });
+    var mine = token;
+    Promise.all(jobs).then(function () {
+      if (mine !== token) return;
+      VERS.forEach(function (v) {
+        var el = $("p" + v.id); if (!el || !el.on || el._wired) return; el._wired = true;
+        el.on("plotly_relayout", function (ev) {
+          if (syncing || !ev["scene.camera"]) return;
+          cameraEye = ev["scene.camera"].eye || cameraEye;
+          syncing = true;
+          Promise.all(VERS.filter(function (w) { return w.id !== v.id; }).map(function (w) {
+            return Plotly.relayout("p" + w.id, {"scene.camera": ev["scene.camera"]});
+          })).then(function () { syncing = false; });
+        });
+      });
+    });
+  }
+  function updateFrame() {
+    var k = state.frame;
+    if (!window.Plotly || !state.data || !$("p1")) return;
+    VERS.forEach(function (v) {
+      var a = agentArrays(v.id, k), run = runOf(v.id);
+      Plotly.restyle("p" + v.id, {x: [a.x, a.bx], y: [a.y, a.by], z: [a.z, a.bz]}, [1, 2]);
+      $("s" + v.id + "a").textContent = a.x.length + (a.x.length === 1 ? " agent" : " agents");
+      $("s" + v.id + "b").textContent = "best error " + fmt(run.curve[k]);
+    });
+    var e = runOf(1).evals[k];
+    $("evals").textContent = fmtN(e) + " evaluations"; $("slider").value = k;
+    var cm = $("conv2"); if (cm && cm.data) Plotly.relayout(cm, {"shapes[0].x0": e, "shapes[0].x1": e});
+  }
+
+  // ---------- charts ----------
+  function floorv(v) { return Math.max(v, 1e-8); }
+  function chartLayout(xtitle, xtype) {
+    var t = theme();
+    return {margin: {l: 62, r: 14, t: 8, b: 46}, paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: {color: t.fg, size: 13},
+      xaxis: {title: xtitle, type: xtype, gridcolor: t.grid, zerolinecolor: t.grid, linecolor: t.grid},
+      yaxis: {title: "error (log scale)", type: "log", dtick: 1, gridcolor: t.grid, linecolor: t.grid, exponentformat: "power"},
+      legend: {orientation: "h", y: 1.13, x: 0}};
+  }
+  function drawConv2() {
+    var traces = VERS.map(function (v) {
+      var run = runOf(v.id);
+      return {type: "scatter", mode: "lines", name: v.name, x: run.evals, y: run.curve.map(floorv), line: {color: css(v.color), width: 2.5, shape: "hv"}};
+    });
+    var lay = chartLayout("evaluations", "linear"), e = runOf(1).evals[state.frame];
+    lay.shapes = [{type: "line", x0: e, x1: e, y0: 0, y1: 1, yref: "paper", line: {color: theme().muted, width: 1.5, dash: "dot"}}];
+    Plotly.react("conv2", traces, lay, {displayModeBar: false, responsive: true});
+  }
+  function drawConv10() {
+    var d = state.data, traces = [];
+    VERS.forEach(function (v) {
+      d.ten_runs[String(v.id)].forEach(function (run, i) {
+        traces.push({type: "scatter", mode: "lines", name: v.name, legendgroup: v.name, showlegend: i === 0, x: run.evals, y: run.curve.map(floorv),
+          line: {color: css(v.color), width: 1.6}, opacity: 0.85, hovertemplate: v.name + ": %{y:.3g} at %{x} evaluations<extra></extra>"});
+      });
+    });
+    Plotly.react("conv10", traces, chartLayout("evaluations (log scale)", "log"), {displayModeBar: false, responsive: true});
+    var parts = VERS.map(function (v) {
+      return '<b style="color:var(' + v.color + ')">' + v.name + '</b>: ' + d.ten_runs[String(v.id)].map(function (r) { return fmt(r.final); }).join(", ");
+    });
+    var t = TABLE[state.suite][state.f];
+    $("tensummary").innerHTML = "Error after " + fmtN(d.ten_evals) + " evaluations, " + d.ten_runs["1"].length + " runs each. " + parts.join(" &nbsp;·&nbsp; ") +
+      ".<br><span class=\"muted\">30-run average in the benchmark: Echo " + fmt(t.v2) + ", Encore " + fmt(t.v3) + ".</span>";
+  }
+
+  // ---------- start ----------
+  $("menu").addEventListener("click", function () {
+    var open = document.body.classList.toggle("nav-open"); $("menu").setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  $("scrim").addEventListener("click", function () { document.body.classList.remove("nav-open"); $("menu").setAttribute("aria-expanded", "false"); });
+  var dark = window.matchMedia("(prefers-color-scheme: dark)");
+  if (dark.addEventListener) dark.addEventListener("change", function () { if (parseRoute().view === "f" && window.Plotly && state.data) { buildPanels(); drawConv2(); drawConv10(); updateFrame(); } });
+  window.addEventListener("hashchange", route);
+  buildNav(); route();
+})();
+</script>
+</body>
+</html>
