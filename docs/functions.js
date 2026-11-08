@@ -42,7 +42,7 @@ window.SOUND_TEXT = {
       named: "Each move gets its random push from echoes: places that agents have left behind. The gap between a random agent and an echo sets the size and direction of the push, so steps follow the spread of the group.",
       short: ["Loudness by rank; the exponent κ rises from 1 to 4", "An echo push, learned step sizes, only some coordinates move", "The last 30% refines the best point alone"],
       tagline: "Loudness by rank, steps that learn from what worked, and a final polish.",
-      origin: "Keeps the sound model, replaces the rest (commit b33e76f).",
+      origin: "Keeps the sound model, replaces the rest (commit 9ecb68f).",
       phases: [["Group search", 70], ["Refinement", 30]],
       each_round: [
         "Loudness comes from rank only: the best agent is loudest, the worst silent, in equal steps. One extremely bad agent can no longer flatten everyone else.",
