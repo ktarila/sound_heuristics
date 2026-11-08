@@ -212,14 +212,18 @@ Encore on, settings are chosen on CEC 2017 and tested on CEC 2022, so
 the CEC 2022 results stay a fair test. Where runs get stuck, the port
 gives the same values as the published jSO results, to 4-7 digits.
 
-A web page in `docs/index.html` shows all three groups of functions used here:
+A web page in `docs/index.html`, published at
+[ktarila.com/research/sound-intensity-search](https://ktarila.com/research/sound-intensity-search/),
+opens with the research report *Improving sound intensity search*: every change
+that was tried, adopted or not, with its motivation, protocol and result. It
+also shows all three groups of functions used here:
 the 12 CEC 2022 functions (the test set), the 29 CEC 2017 functions (the design
 set) and the 23 classic functions. A sidebar lists them. Each function has its
 history and properties, a 3D surface, a replay of Mating Call, Echo and Encore searching
 it, and curves of runs on the whole function. Other pages explain the three
 versions and summarise what the method does well and what limits it. Open the
 file in a browser (the chart library loads from the internet). The prose is in
-`docs/functions.js`; `python docs/make_text.py` writes `docs/meta.js` (names and
+`docs/functions.js` (the report in `docs/tried.js`); `python docs/make_text.py` writes `docs/meta.js` (names and
 building blocks, read from the code) and `python docs/make_data.py` writes the
 recorded runs in `docs/data/` and the tables in `docs/tables.js` (about 30
 minutes).

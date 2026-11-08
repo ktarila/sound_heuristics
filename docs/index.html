@@ -58,6 +58,8 @@ main { margin-left: var(--sidebar); padding: 36px clamp(16px, 4vw, 56px) 80px; m
 #side nav a[aria-current="page"] { background: var(--ink); color: var(--on-ink); }
 #side nav a .n { min-width: 2.4em; font-variant-numeric: tabular-nums; opacity: 0.65; font-size: 0.8rem; }
 #side .label { display: block; margin: 18px 10px 6px; }
+#side .home { display: inline-block; margin: 0 10px 14px; font-size: 0.82rem; color: var(--muted); text-decoration: none; }
+#side .home:hover { color: var(--ink); text-decoration: underline; }
 #side .ai-note { margin: 12px 10px 0; padding: 8px 10px; font-size: 0.78rem; line-height: 1.45; color: var(--muted); background: var(--surface2); border-radius: 8px; max-width: none; }
 #side .sub { margin: 10px 10px 3px; font-size: 0.78rem; color: var(--muted); }
 #side details { margin: 4px 0; }
@@ -190,6 +192,7 @@ body.doc { --pfont: "Source Serif 4", Charter, "Bitstream Charter", Georgia, "Ti
 .paper .kind { font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 1em; }
 .paper h1 { font: 700 clamp(1.5rem, 3vw, 2.05rem)/1.22 var(--pfont); letter-spacing: 0; margin: 0 auto 0.75em; max-width: 24em; }
 .paper .byline { color: var(--muted); }
+.paper .ptitle .author { margin-top: 1.1em; font-size: 1.08em; color: var(--ink); }
 .paper h2 { font: 700 1.28rem/1.3 var(--pfont); letter-spacing: 0; margin: 2.2em 0 0.7em; }
 .paper h3.sub { font: 700 1.05rem/1.35 var(--pfont); letter-spacing: 0; margin: 1.7em 0 0.5em; }
 .paper .no { display: inline-block; min-width: 2.1em; }
@@ -348,6 +351,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside id="side" aria-label="Site">
+    <a class="home" href="https://ktarila.com/">← ktarila.com</a>
     <div class="brand"><span class="mark">♪</span> Sound intensity search</div>
     <div class="getcode">
       <a class="btn primary" href="https://github.com/ktarila/sound_heuristics" target="_blank" rel="noopener">Code on GitHub ↗</a>
@@ -424,7 +428,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
 
   // ---------- navigation ----------
   function buildNav() {
-    var html = '<a href="#/tried" data-r="tried"><span>Research report</span></a>' +
+    var html = '<a href="#/report" data-r="report"><span>Research report</span></a>' +
       '<a href="#/overview" data-r="overview"><span>Overview</span></a>' +
       '<a href="#/versions" data-r="versions"><span>The three versions</span></a>' +
       '<a href="#/limits" data-r="limits"><span>Strengths and limits</span></a>' +
@@ -490,8 +494,9 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
       if (ids("cec2022").indexOf(+p[1]) >= 0) return {view: "f", suite: "cec2022", f: +p[1], key: "f:cec2022:" + p[1]};
     }
     if (p[0] === "s" && SUITES.indexOf(p[1]) >= 0) return {view: "s", suite: p[1], key: "s:" + p[1]};
-    if (["overview", "versions", "limits", "tried", "sources"].indexOf(p[0]) >= 0) return {view: p[0], key: p[0], anchor: p[1]};
-    return {view: "tried", key: "tried"};
+    if (p[0] === "tried") { history.replaceState(null, "", "#/report"); p[0] = "report"; }   // old address of the report
+    if (["overview", "versions", "limits", "report", "sources"].indexOf(p[0]) >= 0) return {view: p[0], key: p[0], anchor: p[1]};
+    return {view: "report", key: "report"};
   }
   // ordinals get a raised suffix (2<sup>nd</sup>) and numbers such as 2.5e-20 are set as 2.5 × 10<sup>−20</sup>
   var ORD = /(\d)(st|nd|rd|th)\b/g, EXP = /\b(\d+(?:\.\d+)?)e([+\-−]?)(\d+)\b/g;
@@ -514,17 +519,17 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
     stop(); purge(); token += 1;
     var r = parseRoute(), main = $("main");
     markNav(r.key, r.suite);
-    document.body.classList.toggle("doc", r.view === "tried");
-    var pop = $("cite-pop"); if (pop && r.view !== "tried") pop.remove();
+    document.body.classList.toggle("doc", r.view === "report");
+    var pop = $("cite-pop"); if (pop && r.view !== "report") pop.remove();
     if (r.view === "f") { openFunction(r.suite, r.f); }
     else {
       main.innerHTML = r.view === "versions" ? versionsView() : r.view === "limits" ? limitsView() :
-        r.view === "tried" ? triedView() :
+        r.view === "report" ? triedView() :
         r.view === "sources" ? sourcesView() : r.view === "s" ? suiteView(r.suite) : overviewView();
       wireTable();
       supOrdinals(main);
-      if (r.view === "tried") wireTried();
-      document.title = (r.view === "s" ? T.suites[r.suite].label + " · " : r.view === "tried" ? "Improving sound intensity search · " : "") + "Sound Intensity Search";
+      if (r.view === "report") wireTried();
+      document.title = (r.view === "s" ? T.suites[r.suite].label + " · " : r.view === "report" ? "Improving sound intensity search · " : "") + "Sound Intensity Search";
       window.scrollTo(0, 0);
       if (r.anchor) { var el = $("v" + r.anchor); if (el) el.scrollIntoView(); }
       main.focus({preventScroll: true});
@@ -631,7 +636,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
       VERS.map(versionCard).join("") +
       '<h2>Side by side</h2><div class="tablewrap"><table class="left"><thead><tr><th>Part</th><th>Mating Call</th><th>Echo</th><th>Encore</th></tr></thead><tbody>' +
       rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td></tr>'; }).join("") + '</tbody></table></div>' +
-      '<p class="note" style="margin-top:12px">Full description, every experiment and the references are in the <a href="https://github.com/ktarila/sound_heuristics">README</a>. The ideas that did not work have <a href="#/tried">their own page</a>.</p>';
+      '<p class="note" style="margin-top:12px">Full description, every experiment and the references are in the <a href="https://github.com/ktarila/sound_heuristics">README</a>. The ideas that did not work have <a href="#/report">their own page</a>.</p>';
   }
 
   // ---------- strengths and limits ----------
@@ -656,12 +661,12 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
       '<li><b>It solves the smooth and plain functions exactly.</b> F1, F3, F5 and F11 end at error 0 in every run. It finishes near the best entry on F6 (0.098 against 0.017), F9 (229 against 186) and F12 (159 against 147).</li>' +
       '<li><b>It avoids traps on blended functions.</b> Hearing near neighbours first keeps separate groups apart instead of rushing into one valley. On CEC 2017 F22 and F24 it ends in the best valley in most runs, where the usual differential evolution rule is trapped (F22: error 21 against 93 and 100).</li>' +
       '<li><b>Each added part helped, and the gains carry to 30 coordinates.</b> On CEC 2017 at 30 coordinates Encore beats Echo on 24 of 29 functions and loses on none (10 runs each).</li>' +
-      '<li><b>Listening to the loudest is a real rule, not a relabelling.</b> Swapped for the differential evolution rule, the results tie overall, but the two win in different places. The rules of its closest relatives, the firefly algorithm and fitness-distance-ratio particle swarm, either tie and fall into the same traps as the differential evolution rule, or are worse overall. Listening is the only one of the five rules tested that avoids the traps without being worse overall (<a href="#/tried">details</a>).</li></ul></div>' +
+      '<li><b>Listening to the loudest is a real rule, not a relabelling.</b> Swapped for the differential evolution rule, the results tie overall, but the two win in different places. The rules of its closest relatives, the firefly algorithm and fitness-distance-ratio particle swarm, either tie and fall into the same traps as the differential evolution rule, or are worse overall. Listening is the only one of the five rules tested that avoids the traps without being worse overall (<a href="#/report">details</a>).</li></ul></div>' +
       '<div class="card"><h2 style="margin-top:0">What limits it</h2><ul>' +
       '<li><b>Regular fields of valleys.</b> On CEC 2022 F4 (Rastrigin) every run ends one to six valleys from the best (error 3.48; the best entry reaches 0.27 and three others about 1.3). F8 is 1.94 where most entries are below 0.6, and F7 is 0.027 where several reach 0.</li>' +
       '<li><b>Traps.</b> On CEC 2022 F10, 24 of 30 runs end in the trap valley (error about 100), and 28 and 30 of 30 with two other sets of seeds. Six entries have a lower average. At 20 coordinates it is the other way round: 22 of 30 runs escape.</li>' +
       '<li><b>A second minimum.</b> On CEC 2022 F2 (Rosenbrock) about 1 run in 6 ends at 3.987, the valley\'s second minimum.</li>' +
-      '<li><b>A trade-off that was not broken.</b> Hearing neighbours first protects against traps; hearing the best from anywhere crosses fields of valleys faster. They cannot be mixed in one group, and splitting the group or switching mid-run each traded one weakness for the other (<a href="#/tried">everything that was tried</a>).</li>' +
+      '<li><b>A trade-off that was not broken.</b> Hearing neighbours first protects against traps; hearing the best from anywhere crosses fields of valleys faster. They cannot be mixed in one group, and splitting the group or switching mid-run each traded one weakness for the other (<a href="#/report">everything that was tried</a>).</li>' +
       '<li><b>Narrow evidence.</b> The 30-coordinate check is CEC 2017 only, 10 runs. The 20-coordinate CEC 2022 result uses one set of seeds; at 10 coordinates other seeds moved F10 a lot. The settings were tuned on CEC 2017, so those numbers are optimistic. No real-world problems have been tried, and much of the machinery (the difference move, the step-size memory, the shrinking group, the final refinement) is borrowed from differential evolution. What is new is the sound model that decides whom each agent moves relative to.</li></ul></div></div>' +
       '<h2>Where each CEC 2022 function stands, 10 coordinates</h2>' + resultsTable("cec2022") +
       '<p class="note" style="margin-top:12px">Click a function for its history and a replay of the search.</p>' +
@@ -704,7 +709,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
   }
   function triedLinks(h) {
     var ids = triedRefIds(), S = "[A-ZÀ-Ž][A-Za-zÀ-ž'’-]+", more = "(?: et al\\.| &amp; " + S + ")?";
-    function cite(m, a, y) { var id = ids[a + "|" + y]; return id ? '<a class="cite" href="#/tried" data-goto="' + id + '" data-ref="' + id.slice(4) + '">' + m + '</a>' : m; }
+    function cite(m, a, y) { var id = ids[a + "|" + y]; return id ? '<a class="cite" href="#/report" data-goto="' + id + '" data-ref="' + id.slice(4) + '">' + m + '</a>' : m; }
     h = h.replace(new RegExp("(" + S + ")" + more + " \\((\\d{4})\\)", "g"), cite);
     h = h.replace(new RegExp("(" + S + ")" + more + ", (\\d{4})", "g"), cite);
     function group(re, idOf) {
@@ -712,7 +717,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
         var first = true;
         return list.replace(/\d+(?:\.\d+)*/g, function (n) {
           var text = first ? word + " " + n : n; first = false;
-          return '<a class="xref" href="#/tried" data-goto="' + idOf(n) + '">' + text + '</a>';
+          return '<a class="xref" href="#/report" data-goto="' + idOf(n) + '">' + text + '</a>';
         });
       });
     }
@@ -826,7 +831,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
       '<button type="button" class="toc-toggle" id="toc-toggle" aria-expanded="false" aria-controls="toc-list"><span>Contents</span><span class="now" id="toc-now"></span></button>' +
       '<div class="toc-head">Contents</div><nav class="toc-list" id="toc-list">' + triedToc() + '</nav></aside>' +
       '<article class="paper"><header class="ptitle"><p class="kind">Technical report</p><h1>' + esc(TRIED.title) + '</h1>' +
-      '<p class="byline">From Echo to Encore</p></header>' +
+      '<p class="byline">From Echo to Encore</p><p class="author">Patrick Kenekayoro</p></header>' +
       '<section class="abstract"><h2>Abstract</h2><p>' + triedText(TRIED.abstract) + '</p>' +
       '<p class="kw"><i>Keywords:</i> ' + esc(TRIED.keywords.join("; ")) + '</p></section>' +
       h2("rep-1", "1", "Introduction") + triedParas(TRIED.intro) + '<p>The contributions are:</p>' + triedList(TRIED.contributions) +
@@ -844,7 +849,7 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
   }
   function triedToc() {
     function link(id, no, text, cls) {
-      return '<a href="#/tried" data-goto="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + '><span class="n">' + no + '</span><span>' + esc(text) + '</span></a>';
+      return '<a href="#/report" data-goto="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + '><span class="n">' + no + '</span><span>' + esc(text) + '</span></a>';
     }
     function subs(prefix, list, key) {
       return list.map(function (x, i) { return link("rep-" + prefix + "-" + (i + 1), prefix + "." + (i + 1), x[key], "l2"); }).join("");
