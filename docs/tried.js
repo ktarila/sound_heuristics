@@ -1,7 +1,8 @@
-// Text for the "Tried and did not work" page, written as a research report:
-// every modification and diagnostic run tested after Echo that was not
-// adopted, with its motivation, exact form, protocol and measured outcome.
-// Sources: the project's experiment log, the README and the saved results.
+// Text of the research report "Improving sound intensity search": every
+// change and diagnostic run tested from Echo on, adopted or not, with its
+// motivation, exact form, protocol and measured outcome. Sources: the saved
+// results in results/, the README, and the experiment log kept during
+// development (not part of this repository).
 // Numbers are mean errors unless stated. "{N}" and "{K}" in the text are
 // replaced by the page with the number of entries and of partly kept entries
 // ("{k}" is the same count written in lower case). No dates: the report

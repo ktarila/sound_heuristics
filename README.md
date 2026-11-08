@@ -16,7 +16,7 @@ call), **Echo** (version 2: each move gets a push from echoes, places agents
 left behind) and **Encore** (version 3: when stuck, the group plays again from
 new places). In the code and result files they are `v1`, `v2` and `v3`.
 
-This is Encore, in progress: Echo plus starting the group again
+This is Encore: Echo plus starting the group again
 when it gets stuck (step 8), a group that shrinks during the run
 (step 9), and hearing that turns less exact after the start (step 10). The sound model (steps 1-3 below) follows
 the paper, with two changes: loudness comes from an agent's place in the
@@ -227,6 +227,10 @@ file in a browser (the chart library loads from the internet). The prose is in
 building blocks, read from the code) and `python docs/make_data.py` writes the
 recorded runs in `docs/data/` and the tables in `docs/tables.js` (about 30
 minutes).
+
+The prototypes and raw results behind the report, mainly its Sections 3.2
+to 3.7, are in `experiments/` (see its README). They are kept as they were
+run and are not part of the package.
 
 `-i` selects one of the 23 test functions in `sound_heuristic/fitness.py`.
 Each run reports the mean, standard deviation, median, best and worst
@@ -1024,3 +1028,8 @@ Encore uses it (step 9).
   evolution with optional external archive. *IEEE Transactions on
   Evolutionary Computation*, 13(5), 945-958.
   [doi:10.1109/TEVC.2009.2014613](https://doi.org/10.1109/TEVC.2009.2014613)
+
+## License
+
+MIT; see `LICENSE`. The CEC 2017 and CEC 2022 data files are not included:
+they are downloaded from the organisers' repositories on first use.
