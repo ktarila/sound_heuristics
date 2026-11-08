@@ -58,6 +58,7 @@ main { margin-left: var(--sidebar); padding: 36px clamp(16px, 4vw, 56px) 80px; m
 #side nav a[aria-current="page"] { background: var(--ink); color: var(--on-ink); }
 #side nav a .n { min-width: 2.4em; font-variant-numeric: tabular-nums; opacity: 0.65; font-size: 0.8rem; }
 #side .label { display: block; margin: 18px 10px 6px; }
+#side .ai-note { margin: 12px 10px 0; padding: 8px 10px; font-size: 0.78rem; line-height: 1.45; color: var(--muted); background: var(--surface2); border-radius: 8px; max-width: none; }
 #side .sub { margin: 10px 10px 3px; font-size: 0.78rem; color: var(--muted); }
 #side details { margin: 4px 0; }
 #side summary { cursor: pointer; padding: 7px 10px; border-radius: 8px; font-weight: 650; font-size: 0.94rem; list-style: none; display: flex; justify-content: space-between; align-items: baseline; }
@@ -441,7 +442,8 @@ table.entries tr.e[hidden], table.entries tr.grp[hidden] { display: none; }
       });
       html += '</details>';
     });
-    html += '<span class="label">More</span><a href="#/sources" data-r="sources"><span>Sources and notes</span></a>';
+    html += '<span class="label">More</span><a href="#/sources" data-r="sources"><span>Sources and notes</span></a>' +
+      '<p class="ai-note">Experiments and writing were done with AI assistance.</p>';
     $("nav").innerHTML = html;
     $("nav").addEventListener("click", function (e) {
       if (e.target.closest("a")) { document.body.classList.remove("nav-open"); $("menu").setAttribute("aria-expanded", "false"); }
