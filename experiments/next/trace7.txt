@@ -1,0 +1,17 @@
+inst 0 run  0 final     9.213  groups: 0-105k e=13.9 n=78 | 105-180k e=20.3 n=4
+inst 0 run  1 final     15.56  groups: 0-155k e=17.2 n=29 | 155-180k e=28.2 n=4
+inst 0 run  2 final      3.98  groups: 0-22k e=52.4 n=159 | 22-163k e=3.98 n=21 | 163-177k e=22.8 n=7 | 177-180k e=52.6 n=4
+inst 0 run  3 final     1.619  groups: 0-147k e=1.62 n=36 | 147-180k e=26.5 n=4
+inst 0 run  4 final     10.24  groups: 0-129k e=11.5 n=54 | 129-180k e=24 n=4
+inst 0 run  5 final     5.599  groups: 0-142k e=5.6 n=41 | 142-180k e=36.3 n=4
+inst 0 run  6 final    0.6241  groups: 0-163k e=0.624 n=20 | 163-180k e=47.5 n=4
+inst 0 run  7 final     1.619  groups: 0-23k e=46.3 n=157 | 23-151k e=1.62 n=33 | 151-180k e=36.8 n=4
+inst 1 run  0 final     0.995  groups: 0-150k e=0.995 n=33 | 150-179k e=9.58 n=5 | 179-180k e=54.1 n=4
+inst 1 run  1 final     4.616  groups: 0-144k e=22.4 n=40 | 144-175k e=4.62 n=9 | 175-180k e=73.6 n=4
+inst 1 run  2 final     8.927  groups: 0-147k e=12.2 n=36 | 147-173k e=25.1 n=11 | 173-180k e=89.8 n=4
+inst 1 run  3 final     6.427  groups: 0-155k e=7.49 n=28 | 155-180k e=43 n=4
+inst 1 run  4 final     21.19  groups: 0-112k e=23.5 n=70 | 112-180k e=22.2 n=4
+inst 1 run  5 final     19.76  groups: 0-82k e=23.7 n=99 | 82-171k e=24.2 n=12 | 171-179k e=50.3 n=5 | 179-180k e=157 n=4
+inst 1 run  6 final     20.88  groups: 0-142k e=21.5 n=41 | 142-180k e=52.6 n=4
+inst 1 run  7 final     0.995  groups: 0-25k e=49 n=155 | 25-159k e=0.995 n=24 | 159-180k e=24.6 n=4
+mean 8.26490245663256 median 6.01276823986761

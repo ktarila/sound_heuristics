@@ -1,0 +1,15 @@
+{
+ "name": "v4-smoke",
+ "suite": "lab",
+ "dim": 10,
+ "runs": 2,
+ "evaluations": "100k (c) / 200k (p)",
+ "variant": "v4.V4",
+ "settings": {},
+ "errors": {
+  "q2x0": [
+   0.0,
+   0.0
+  ]
+ }
+}

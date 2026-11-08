@@ -1,0 +1,25 @@
+D10 F1  points  1801  max rel diff 2.30e-14  (ours 2345978.301, C 2345978.301)  C at best point 300
+D10 F2  points  1801  max rel diff 4.30e-16  (ours 8462.549292, C 8462.549292)  C at best point 400
+D10 F3  points  1801  max rel diff 6.20e-16  (ours 733.9957679, C 733.9957679)  C at best point 600
+D10 F4  points  1801  max rel diff 2.22e-16  (ours 1024.170587, C 1024.170587)  C at best point 800
+D10 F5  points  1801  max rel diff 4.43e-16  (ours 16420.38602, C 16420.38602)  C at best point 900
+D10 F6  points  1801  max rel diff 4.29e-16  (ours 33944.16827, C 33944.16827)  C at best point 1800
+D10 F7  points  1801  max rel diff 1.98e-16  (ours 2296.14203, C 2296.14203)  C at best point 2000
+D10 F8  points  1801  max rel diff 6.60e-16  (ours 1410260.452, C 1410260.452)  C at best point 2200
+D10 F9  points  4510  max rel diff 9.61e-16  (ours 5677.473751, C 5677.473751)  C at best point 2300
+D10 F10 points  4510  max rel diff 2.15e-14  (ours 2500.000533, C 2500.000533)  C at best point 2400
+D10 F11 points  4510  max rel diff 1.10e-15  (ours 14914.15397, C 14914.15397)  C at best point 2600
+D10 F12 points  4510  max rel diff 3.55e-13  (ours 2700.002259, C 2700.002259)  C at best point 2700
+D20 F1  points  1801  max rel diff 4.17e-14  (ours 3296244.52, C 3296244.52)  C at best point 300
+D20 F2  points  1801  max rel diff 5.16e-16  (ours 14112.59529, C 14112.59529)  C at best point 400
+D20 F3  points  1801  max rel diff 6.84e-16  (ours 831.5809141, C 831.5809141)  C at best point 600
+D20 F4  points  1801  max rel diff 3.29e-16  (ours 1382.73804, C 1382.73804)  C at best point 800
+D20 F5  points  1801  max rel diff 4.42e-16  (ours 32919.26484, C 32919.26484)  C at best point 900
+D20 F6  points  1801  max rel diff 6.73e-16  (ours 4.53541734e+10, C 4.53541734e+10)  C at best point 1800
+D20 F7  points  1801  max rel diff 1.87e-16  (ours 2431.672355, C 2431.672355)  C at best point 2000
+D20 F8  points  1801  max rel diff 6.68e-16  (ours 1428235591, C 1428235591)  C at best point 2200
+D20 F9  points  4510  max rel diff 6.93e-16  (ours 10499.10815, C 10499.10815)  C at best point 2300
+D20 F10 points  4510  max rel diff 5.66e-14  (ours 2500.000803, C 2500.000803)  C at best point 2400
+D20 F11 points  4510  max rel diff 1.36e-15  (ours 47993.54833, C 47993.54833)  C at best point 2600
+D20 F12 points  4510  max rel diff 9.80e-13  (ours 2700.006539, C 2700.006539)  C at best point 2700
+largest relative difference over all: 9.80e-13

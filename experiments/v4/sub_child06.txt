@@ -1,0 +1,11 @@
+suite=cec2017 runs=20 pop=180 final_pop=4 evaluations=100000 kappa=4.0 refine=0.3 archive=1.0 stall=0.1 ablate=humans
+dim=10 evaluations per run=100000
+   F  mean error        std      median       best      worst
+F5         4.676       1.41       4.975       1.99       6.96
+F7         9.198        3.1       9.048       4.61       16.4
+F8         4.229        1.4        3.98      0.995       6.96
+F10        143.4       86.4       136.9        3.6        342
+F16       0.5134      0.281      0.4635      0.191       1.41
+F17       0.4574      0.325      0.4017     0.0124       1.13
+F22        33.64       45.2       5.782          0        100
+F24        169.9        110         100        100        336

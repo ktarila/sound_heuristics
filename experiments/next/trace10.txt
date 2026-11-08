@@ -1,0 +1,17 @@
+inst 0 run  0 final     100.6  groups: 0-60k e=101 n=121 | 60-118k e=101 n=65 | 118-166k e=101 n=17 | 166-180k e=101 n=4
+inst 0 run  1 final     100.6  groups: 0-112k e=101 n=71 | 112-180k e=101 n=4
+inst 0 run  2 final     100.3  groups: 0-180k e=100 n=4
+inst 0 run  3 final     100.6  groups: 0-100k e=101 n=83 | 100-180k e=101 n=4
+inst 0 run  4 final     100.6  groups: 0-70k e=101 n=112 | 70-122k e=101 n=60 | 122-174k e=101 n=10 | 174-180k e=101 n=4
+inst 0 run  5 final     100.6  groups: 0-105k e=101 n=78 | 105-180k e=101 n=4
+inst 0 run  6 final     100.6  groups: 0-109k e=101 n=73 | 109-170k e=101 n=14 | 170-180k e=214 n=4
+inst 0 run  7 final    0.1874  groups: 0-81k e=101 n=101 | 81-175k e=101 n=9 | 175-180k e=0.187 n=4
+inst 1 run  0 final       100  groups: 0-176k e=100 n=8 | 176-180k e=228 n=4
+inst 1 run  1 final       100  groups: 0-180k e=100 n=4
+inst 1 run  2 final       100  groups: 0-179k e=100 n=5 | 179-180k e=223 n=4
+inst 1 run  3 final       100  groups: 0-179k e=100 n=5 | 179-180k e=257 n=4
+inst 1 run  4 final       100  groups: 0-180k e=100 n=4
+inst 1 run  5 final       100  groups: 0-180k e=100 n=4
+inst 1 run  6 final       100  groups: 0-177k e=100 n=7 | 177-180k e=208 n=4
+inst 1 run  7 final       100  groups: 0-177k e=100 n=7 | 177-180k e=132 n=4
+mean 94.00930946020432 median 100.00111914571718
